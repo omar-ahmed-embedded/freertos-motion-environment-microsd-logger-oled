@@ -17,9 +17,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+
 
 /* Defines ------------------------------------------------------------------*/
 #define UART_RX_BUFFER_SIZE	64
@@ -31,7 +29,7 @@ extern UART_HandleTypeDef huart2;
 
 extern uint8_t uart_rx_buffer[UART_RX_BUFFER_SIZE];
 extern char uart_tx_buffer[UART_TX_BUFFER_SIZE];
-extern volatile uint8_t uart_rx_ready;
+
 extern uint8_t pause_sd_logging;
 
 /* Functions ---------------------------------------------------------*/
@@ -45,10 +43,7 @@ void print_status(void);
 
 
 // FreeRTOS
-extern TaskHandle_t shell_read_task_handle;
-extern TaskHandle_t shell_print_task_handle;
 
-extern QueueHandle_t shell_print_queue_handle;
 
 /* Functions ---------------------------------------------------------*/
 void shell_read_task(void *arg);

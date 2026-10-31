@@ -14,7 +14,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "mpu6050.h"
-
+#include "freertos-app.h"
 
 
 /* Variables ---------------------------------------------------------*/
@@ -28,9 +28,6 @@ uint8_t mpu_log_buffer[LOG_BUFFER_SIZE];
 
 int i2c_sample_count = 0;
 uint16_t indx = 0;
-volatile uint32_t i2c_overrun_count = 0;
-int count;
-int count2;
 uint8_t start_timer = 0;
 
 uint8_t display_live_mpu = 0;
@@ -85,18 +82,6 @@ mpu_status_t mpu6050_init(void){
 
 
 /**
-* @brief Sample mpu6050
-* @retval None
-*/
-void mpu6050_sample(void){
-	// Sensor by defualt updates its registers with 8kHz (DLPF_CFG = 0)
-	if (HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
-						I2C_MEMADD_SIZE_8BIT, i2c_rx_buffer, I2C_RX_FRAME_SIZE) != HAL_OK){
-		shell_printf("MPU6050 read error!\r\n");
-	}
-}
-
-/**
 * @brief Print latest mpu6050readings
 * @retval None
 */
@@ -136,13 +121,71 @@ void convert_display_live_sensor(void){
 }
 
 /**
+* @brief mpu6050 sample task
+* @retval None
+*/
+void mpu6050_sample_task(void *arg){
+
+	for(;;){
+
+		// Sensor by defualt updates its registers with 8kHz (DLPF_CFG = 0)
+		if (HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
+							I2C_MEMADD_SIZE_8BIT, i2c_rx_buffer, I2C_RX_FRAME_SIZE) != HAL_OK){
+			shell_printf("MPU6050 read error!\r\n");
+		    vTaskDelay(pdMS_TO_TICKS(250));
+		    continue;
+		}
+
+		/* Wait until DMA completion callback*/
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+		  /* Save received frame bytes in buffer */
+
+		if(indx <= MPU_LOG_DATA_SIZE-I2C_RX_FRAME_SIZE){
+			for (uint8_t i = 0; i < I2C_RX_FRAME_SIZE; i++){
+				mpu_log_buffer[indx++] = i2c_rx_buffer[i];			// Add 14 received to log buffer
+			}
+		}
+		if (indx == MPU_LOG_DATA_SIZE){		// At index 504
+			for (uint16_t i = MPU_LOG_DATA_SIZE; i < LOG_BUFFER_SIZE; i++){			// Full bytes 504..512 with 0xFF
+				mpu_log_buffer[i] = 0xFF;
+			}
+			shell_printf("\r\nSensor log data ready.\r\n");
+
+
+			/* Queue a copy of the completed log buffer. */
+			if (xQueueSend(sd_log_queue_handle, mpu_log_buffer,
+			        pdMS_TO_TICKS(250)) == pdPASS){
+			    indx = 0;
+			}
+			else{
+			    shell_printf("SD log queue full; buffer retained for retry.\r\n");
+			}
+		}
+
+		/* Sample each 250 ms*/
+		vTaskDelay(pdMS_TO_TICKS(250));
+	}
+}
+
+
+
+
+/**
 * @brief I2C DMA receive interrupt call back
 * @retval None
 */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
-		i2c_frame_ready = 1;
+        BaseType_t higher_priority_task_woken = pdFALSE;
+
+        vTaskNotifyGiveFromISR(
+            mpu6050_sample_task_handle,
+            &higher_priority_task_woken
+        );
+
+        portYIELD_FROM_ISR(higher_priority_task_woken);
 
 	}
 }

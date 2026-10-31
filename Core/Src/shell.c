@@ -14,6 +14,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
+#include "freertos-app.h"
 #include "shell.h"
 #include "mpu6050.h"
 #include "sd.h"
@@ -27,20 +28,12 @@
 /* Variables ---------------------------------------------------------*/
 uint8_t uart_rx_buffer[UART_RX_BUFFER_SIZE];
 char    uart_tx_buffer[UART_TX_BUFFER_SIZE];
-volatile uint8_t uart_rx_ready = 0;
 
 uint8_t rx_head = 0;
 uint8_t rx_tail = 0;
 char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
 uint8_t pause_sd_logging = 0;
-
-// freeRTOS objects
-TaskHandle_t shell_read_task_handle;
-TaskHandle_t shell_print_task_handle;
-
-QueueHandle_t shell_print_queue_handle;
-
 
 
 /* Code ---------------------------------------------------------*/
@@ -340,7 +333,6 @@ void decode_print_sd_rx_block(uint8_t *read_buffer){
 void shell_read_task(void *arg)
 {
 
-	(void)arg;
 	UART_Recieve_Start();
 
 	for(;;)
@@ -358,8 +350,6 @@ void shell_read_task(void *arg)
 
 void shell_print_task(void *arg)
 {
-
-	(void)arg;
 
 	shell_print_msg_t print_msg_receive;
 

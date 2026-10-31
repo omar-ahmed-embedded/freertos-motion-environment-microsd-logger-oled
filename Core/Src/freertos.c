@@ -19,9 +19,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "freertos-app.h"
+#include "mpu6050.h"
 
-#include "FreeRTOS.h"      /* The actual FreeRTOS kernel header */
-#include "task.h"
 #include "main.h"
 #include "shell.h"
 
@@ -47,7 +46,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+TaskHandle_t shell_read_task_handle;
+TaskHandle_t shell_print_task_handle;
+TaskHandle_t mpu6050_sample_task_handle;
 
+QueueHandle_t shell_print_queue_handle;
+QueueHandle_t mpu6050_queue_handle;
+QueueHandle_t sd_log_queue_handle;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,23 +65,34 @@
 void FreeRTOS_Init(void){
 
 	shell_print_queue_handle = xQueueCreate(4, sizeof(shell_print_msg_t));
-	if (shell_print_queue_handle == NULL) { Error_Handler(); }
+	shell_print_queue_handle = xQueueCreate(4, sizeof(mpu_log_buffer));
 
 	xTaskCreate(
 			shell_read_task,
-			"Shell read",
+			"shell_read_task",
 			1024,
 			NULL,
-			1,
+			2,
 			&shell_read_task_handle);
 
 	xTaskCreate(
 			shell_print_task,
-			"Shell print",
+			"shell_print_task",
+			1024,
+			NULL,
+			2,
+			&shell_print_task_handle);
+
+
+	xTaskCreate(
+			mpu6050_sample_task,
+			"mpu6050_sample_task",
 			1024,
 			NULL,
 			1,
-			&shell_print_task_handle);
+			&mpu6050_sample_task_handle);
+
+
 
 }
 /* USER CODE END Application */

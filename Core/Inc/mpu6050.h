@@ -63,12 +63,12 @@ typedef enum {
 
 
 /* Functions ------------------------------------------------------------------*/
-void mpu6050_sample(void);
 mpu_status_t mpu6050_init(void);
 void convert_display_live_sensor(void);
 void decode_print_sd_rx_block(uint8_t *read_buffer);
 
-
+// RTOS
+void mpu6050_sample_task(void *arg);
 
 
 #endif
