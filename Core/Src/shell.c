@@ -15,7 +15,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "shell.h"
-
+#include "mpu6050.h"
 #include "stm32f4xx_ll_usart.h"
 
 #include <string.h>		// Byte and string manipulation
