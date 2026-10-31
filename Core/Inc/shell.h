@@ -17,7 +17,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 
 /* Defines ------------------------------------------------------------------*/
 #define UART_RX_BUFFER_SIZE	64
@@ -40,5 +42,18 @@ void shell_execute(char *msg);
 int  parse_int(char *str, uint32_t *val);
 void decode_print_sd_rx_block(uint8_t *read_buffer);
 void print_status(void);
+
+
+// FreeRTOS
+extern TaskHandle_t shell_read_task_handle;
+extern TaskHandle_t shell_print_task_handle;
+
+extern QueueHandle_t shell_print_queue_handle;
+
+
+typedef struct{
+	char data[UART_TX_BUFFER_SIZE];
+	uint16_t len;
+} shell_print_msg_t;
 
 #endif

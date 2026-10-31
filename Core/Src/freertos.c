@@ -21,6 +21,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
+#include "shell.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -54,6 +55,26 @@
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void FreeRTOS_Init(void){
 
+	xQueueCreate(4, sizeof(shell_print_msg_t));
+
+	xTaskCreate(
+			shell_read_task,
+			"Shell read",
+			256,
+			NULL,
+			2,
+			&shell_read_task_handle);
+
+	xTaskCreate(
+			shell_print_task,
+			"Shell print",
+			256,
+			NULL,
+			2,
+			&shell_print_task_handle);
+
+}
 /* USER CODE END Application */
 

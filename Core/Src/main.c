@@ -118,7 +118,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-
+  FreeRTOS_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -150,6 +150,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */

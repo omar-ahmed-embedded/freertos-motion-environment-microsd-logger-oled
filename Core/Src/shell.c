@@ -15,8 +15,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "shell.h"
-#include "sd.h"
-#include "mpu6050.h"
+
 #include "stm32f4xx_ll_usart.h"
 
 #include <string.h>		// Byte and string manipulation
@@ -34,6 +33,13 @@ uint8_t rx_tail = 0;
 char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
 uint8_t pause_sd_logging = 0;
+
+// freeRTOS objects
+TaskHandle_t shell_read_task_handle;
+TaskHandle_t shell_print_task_handle;
+
+QueueHandle_t shell_print_queue_handle;
+
 
 
 /* Code ---------------------------------------------------------*/
@@ -53,8 +59,11 @@ void UART_Recieve_Start(void){
   */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size){  //size represents number of bytes received when the callback is called
 
+	BaseType_t higher_priority_task_woken = pdFALSE;
+
 	if(huart->Instance == USART2){
-		uart_rx_ready = 1;
+		vTaskNotifyGiveFromISR(shell_read_task_handle, &higher_priority_task_woken);
+		portYIELD_FROM_ISR(higher_priority_task_woken);
 	}
 }
 
@@ -203,7 +212,7 @@ void shell_printf(const char *str, ...){
 
     va_list args;   // A type for handling the arguments represented by ..., it iterates over the additional arguments
     int len;
-
+    shell_print_msg_t print_msg_send;
     //while (huart2.gState != HAL_UART_STATE_READY){
         // Wait until UART is ready for another operation after the latest HAL_UART_Transmit_DMA
         // Acceptable because it is only called in the main loop
@@ -213,15 +222,20 @@ void shell_printf(const char *str, ...){
     va_start(args, str);        // Gives vsnprint access to the arguments supplied through ...
 
     // Formulate the arguments into a string buffer with a max.
-    len = vsnprintf(uart_tx_buffer, UART_TX_BUFFER_SIZE, str, args);        // Difference between snprintf is that it accepts vardiac (accepts additional arguments)
+    len = vsnprintf(print_msg_send.data, UART_TX_BUFFER_SIZE, str, args);        // Difference between snprintf is that it accepts vardiac (accepts additional arguments)
                                                                // Len recieves the bytes written or would have been written if the buffer is not long enough in the buffer. (minus 1(\0))
     va_end(args);      // Finished using va_start
     if (len > 0){
         if(len > (int) UART_TX_BUFFER_SIZE){
-            len = (int) UART_TX_BUFFER_SIZE;
+            len = (int) UART_TX_BUFFER_SIZE;  // - \0
         }
         // Starts the transmission and returns before all the bytes have physically been transmitted.
-        HAL_UART_Transmit(&huart2,(uint8_t *)uart_tx_buffer, (uint16_t) len,100);
+
+       // Fill msg struct
+
+       print_msg_send.len = len;
+       // Queue struct
+       xQueueSend(shell_print_queue_handle, & print_msg_send, pdMS_TO_TICKS(250));
     }
 
 }
@@ -312,6 +326,48 @@ void decode_print_sd_rx_block(uint8_t *read_buffer){
 						gx_dps, gy_dps, gz_dps);
 		shell_printf("temp   =%5.1f C\r\n", temp_c);
 
+	}
+}
+
+
+
+/**
+* @brief Shell task function
+* @retval None
+*/
+
+void shell_read_task(void *arg)
+{
+
+	(void)arg;
+	UART_Recieve_Start();
+
+	for(;;)
+	{
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait until ISR gives notification
+
+		shell_poll();		// poll for msg and send a response
+	}
+}
+
+/**
+* @brief Shell task function
+* @retval None
+*/
+
+void shell_print_task(void *arg)
+{
+
+	(void)arg;
+
+	shell_print_msg_t print_msg_recieve;
+
+	for(;;)
+	{
+		  // Wait until shell_printf gives notification
+		xQueueReceive(shell_print_queue_handle, & print_msg_send, portMAX_DELAY);
+
+		HAL_UART_Transmit(&huart2,(uint8_t *)print_msg_recieve.data, print_msg_recieve.len,100);
 	}
 }
 
