@@ -1,0 +1,11 @@
+../Core/Src/shell.c:51:6:UART_Recieve_Start	1
+../Core/Src/shell.c:61:6:HAL_UARTEx_RxEventCallback	3
+../Core/Src/shell.c:75:6:shell_poll	6
+../Core/Src/shell.c:109:6:shell_execute	14
+../Core/Src/shell.c:179:5:parse_int	6
+../Core/Src/shell.c:212:6:shell_printf	3
+../Core/Src/shell.c:249:6:print_status	5
+../Core/Src/shell.c:282:6:decode_print_sd_rx_block	2
+../Core/Src/shell.c:340:6:shell_read_task	1
+../Core/Src/shell.c:359:6:shell_print_task	1
+../Core/Src/shell.c:382:6:HAL_UART_ErrorCallback	3

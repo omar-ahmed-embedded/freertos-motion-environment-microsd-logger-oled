@@ -15,7 +15,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "sd.h"
-#include "peripheral_config.h"
 #include "main.h"
 #include "shell.h"
 #include "mpu6050.h"

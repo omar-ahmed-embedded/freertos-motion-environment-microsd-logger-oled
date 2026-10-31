@@ -24,6 +24,8 @@
 
 
 /* Variables ---------------------------------------------------------*/
+extern SPI_HandleTypeDef hspi1;
+
 extern uint8_t	sd_initialized;
 extern uint8_t	sd_block_addressing;
 extern uint32_t sd_next_block;

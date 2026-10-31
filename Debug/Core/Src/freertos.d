@@ -1,4 +1,4 @@
-Core/Src/freertos.o: ../Core/Src/freertos.c \
+Core/Src/freertos.o: ../Core/Src/freertos.c ../Core/Inc/freertos-app.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  ../Core/Inc/FreeRTOSConfig.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h \
@@ -42,6 +42,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Core/Inc/shell.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+../Core/Inc/freertos-app.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:

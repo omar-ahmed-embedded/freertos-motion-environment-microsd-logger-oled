@@ -16,6 +16,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "shell.h"
 #include "mpu6050.h"
+#include "sd.h"
 #include "stm32f4xx_ll_usart.h"
 
 #include <string.h>		// Byte and string manipulation
@@ -360,14 +361,14 @@ void shell_print_task(void *arg)
 
 	(void)arg;
 
-	shell_print_msg_t print_msg_recieve;
+	shell_print_msg_t print_msg_receive;
 
 	for(;;)
 	{
 		  // Wait until shell_printf gives notification
-		xQueueReceive(shell_print_queue_handle, & print_msg_send, portMAX_DELAY);
+		xQueueReceive(shell_print_queue_handle, &print_msg_receive, portMAX_DELAY);
 
-		HAL_UART_Transmit(&huart2,(uint8_t *)print_msg_recieve.data, print_msg_recieve.len,100);
+		HAL_UART_Transmit(&huart2,(uint8_t *)print_msg_receive.data, print_msg_receive.len,100);
 	}
 }
 

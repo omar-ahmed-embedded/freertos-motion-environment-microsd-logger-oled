@@ -18,7 +18,9 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "FreeRTOS.h"
+#include "freertos-app.h"
+
+#include "FreeRTOS.h"      /* The actual FreeRTOS kernel header */
 #include "task.h"
 #include "main.h"
 #include "shell.h"
@@ -57,22 +59,23 @@
 /* USER CODE BEGIN Application */
 void FreeRTOS_Init(void){
 
-	xQueueCreate(4, sizeof(shell_print_msg_t));
+	shell_print_queue_handle = xQueueCreate(4, sizeof(shell_print_msg_t));
+	if (shell_print_queue_handle == NULL) { Error_Handler(); }
 
 	xTaskCreate(
 			shell_read_task,
 			"Shell read",
-			256,
+			1024,
 			NULL,
-			2,
+			1,
 			&shell_read_task_handle);
 
 	xTaskCreate(
 			shell_print_task,
 			"Shell print",
-			256,
+			1024,
 			NULL,
-			2,
+			1,
 			&shell_print_task_handle);
 
 }

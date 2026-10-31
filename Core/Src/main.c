@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
+#include "freertos-app.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -118,11 +119,11 @@ int main(void)
   MX_USART2_UART_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-  FreeRTOS_Init();
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osKernelInitialize();
+  FreeRTOS_Init();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -142,7 +143,15 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  TaskHandle_t default_task_handle = NULL;
+  xTaskCreate(
+      StartDefaultTask,
+      "default_task",
+      128,                    /* Stack depth in words */
+      NULL,
+      tskIDLE_PRIORITY + 1,
+      &default_task_handle
+  );
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -154,7 +163,7 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  osKernelStart();
+  vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
 

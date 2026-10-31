@@ -50,6 +50,9 @@ extern TaskHandle_t shell_print_task_handle;
 
 extern QueueHandle_t shell_print_queue_handle;
 
+/* Functions ---------------------------------------------------------*/
+void shell_read_task(void *arg);
+void shell_print_task(void *arg);
 
 typedef struct{
 	char data[UART_TX_BUFFER_SIZE];

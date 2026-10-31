@@ -41,7 +41,7 @@ Core/Src/shell.o: ../Core/Src/shell.c ../Core/Inc/shell.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
- ../Core/Inc/mpu6050.h ../Core/Inc/shell.h \
+ ../Core/Inc/mpu6050.h ../Core/Inc/shell.h ../Core/Inc/sd.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usart.h
 ../Core/Inc/shell.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -88,4 +88,5 @@ Core/Src/shell.o: ../Core/Src/shell.c ../Core/Inc/shell.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
 ../Core/Inc/mpu6050.h:
 ../Core/Inc/shell.h:
+../Core/Inc/sd.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usart.h:
