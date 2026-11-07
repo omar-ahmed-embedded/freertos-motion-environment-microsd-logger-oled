@@ -40,13 +40,174 @@
  * @brief Sensor driver for BME280 sensor
  */
 #include "bme280.h"
-
+#include "freertos-app.h"
+#include "main.h"
+#include "shell.h"
 /**\name Internal macros */
 /* To identify osr settings selected by user */
 #define OVERSAMPLING_SETTINGS    UINT8_C(0x07)
 
 /* To identify filter and standby settings selected by user */
 #define FILTER_STANDBY_SETTINGS  UINT8_C(0x18)
+
+/* Variables---------------------------------------------------------*/
+uint8_t* i2c_bme280_rx_buffer;
+extern I2C_HandleTypeDef hi2c1;
+
+// USER CODE BEGIN
+/**
+  * @brief bme280 read
+  * @retval status
+  */
+static BME280_INTF_RET_TYPE platform_read(uint8_t reg, uint8_t *data, uint32_t length, void *context)
+{
+    uint8_t address = *(uint8_t *)context;
+
+    HAL_StatusTypeDef result = HAL_I2C_Mem_Read(
+        &hi2c1,
+        address << 1,
+        reg,
+        I2C_MEMADD_SIZE_8BIT,
+        data,
+        (uint16_t)length,
+        100
+    );
+
+    return (result == HAL_OK) ? 0 : -1;
+}
+
+/**
+  * @brief Delay for at least the requested microseconds using FreeRTOS ticks.
+  * @param period_us Requested delay in microseconds.
+  * @retval None
+  */
+static void platform_delay_us(uint32_t period_us, void *context)
+{
+    (void)context;
+
+    if (period_us == 0) {
+        return;
+    }
+
+    /* Round up to ticks, plus one for tick-boundary uncertainty. */
+    TickType_t ticks = (TickType_t)(
+        ((uint64_t)period_us * configTICK_RATE_HZ + 999999ULL)
+        / 1000000ULL
+    );
+
+    vTaskDelay(ticks + 1);
+}
+
+/**
+  * @brief bme280 sample task
+  * @retval none
+  */
+void bme280_sample_task(void *arg){
+
+	uint8_t address = 0x76;
+
+	struct bme280_dev sensor = {0}; 	//Holds the communication callbacks, interface information, and calibration data.
+	struct bme280_settings settings = {0};
+	struct bme280_data bme280_log_buffer = {0};
+
+	uint32_t conversion_delay_us;
+	int8_t result;			// BME280_OK on success
+
+	/* Tell Bosch’s driver that we are using I2C. */
+	sensor.intf = BME280_I2C_INTF;
+
+	/* Give the driver the sensor address */
+	sensor.intf_ptr = &address;
+
+	/* Assign our functions to Bosch’s callback fields */
+	sensor.read = platform_read;
+	//sensor.write = platform_write;
+	sensor.delay_us = platform_delay_us;
+
+	/* Organize using I2c with MPU6050 with a semaphore */
+	xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+
+	/* Initialize sensor */
+	result = bme280_init(&sensor);
+
+	if (result == BME280_OK){
+		/* Enable measurments */
+		settings.osr_t = BME280_OVERSAMPLING_1X;
+		settings.osr_p = BME280_OVERSAMPLING_1X;
+		settings.osr_h = BME280_OVERSAMPLING_1X;
+
+		uint8_t selected = BME280_SEL_OSR_TEMP
+		                 | BME280_SEL_OSR_PRESS
+		                 | BME280_SEL_OSR_HUM
+		                 | BME280_SEL_FILTER;
+
+		result = bme280_set_sensor_settings(
+		    selected, &settings, &sensor
+		);
+	}
+
+	xSemaphoreGive(i2c_mutex_handle);
+
+	 if (result != BME280_OK) {
+	        shell_printf("BME init failed: %d\r\n", (int)result);
+	        vTaskDelete(NULL);
+	        return;
+	    }
+
+	 /* Calculate the required conversion time for our selected oversampling. */
+	 result = bme280_cal_meas_delay( &conversion_delay_us, &settings);
+	 if (result != BME280_OK) {
+	     shell_printf("BME delay setup failed: %d\r\n", (int)result);
+	     vTaskDelete(NULL);
+	     return;
+	 }
+
+	 TickType_t last_wake = xTaskGetTickCount();
+
+
+	 for (;;) {
+		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+
+		 result = bme280_set_sensor_mode( BME280_POWERMODE_FORCED, &sensor);
+
+		 xSemaphoreGive(i2c_mutex_handle);	// Release until
+
+		 if (result == BME280_OK) {
+			 platform_delay_us(conversion_delay_us, NULL);	// Wait long enough for internal measurement process to finish.
+
+			 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+
+			 result = bme280_get_sensor_data(BME280_ALL, &bme280_log_buffer, &sensor);
+
+			 if (result == BME280_OK) {
+			     shell_printf("BME sample ready.\r\n");
+			 }
+			 else {
+                shell_printf("BME read failed: %d\r\n", (int)result);
+			 }
+        }
+		else {
+			shell_printf("BME trigger failed: %d\r\n", (int)result);
+        }
+
+		/* Sample every 250ms */
+		 vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(250));
+	}
+
+}
+// USER CODE END
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*!
  * @brief This internal API puts the device to sleep mode.

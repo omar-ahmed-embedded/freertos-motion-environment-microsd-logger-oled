@@ -48,7 +48,7 @@
 
 #ifndef _BME280_H
 #define _BME280_H
-
+#define I2C_RX_FRAME_SIZE 512
 /*! CPP guard */
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +56,9 @@ extern "C" {
 
 /* Header includes */
 #include "bme280_defs.h"
+
+
+/* Variables */
 
 /**
  * \ingroup bme280
