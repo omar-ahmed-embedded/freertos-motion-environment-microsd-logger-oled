@@ -28,12 +28,12 @@ extern SPI_HandleTypeDef hspi1;
 
 extern uint8_t	sd_initialized;
 extern uint8_t	sd_block_addressing;
-extern uint32_t sd_next_block;
-extern uint16_t blocks_written;
-extern uint8_t  sd_buffer_log_flag;
 
-extern uint8_t  sd_write_in_progress;
-extern uint8_t  sd_write_flag;
+
+
+
+
+
 extern uint8_t  sd_write_buffer[SD_BLOCK_SIZE];
 
 extern uint32_t sd_rx_block;
@@ -56,17 +56,28 @@ typedef enum {
 
 } sd_status_t;
 
+typedef enum {
+    SENSOR_MPU6050,
+    SENSOR_BME280
+} sensor_type_t;
+
+typedef struct {
+    uint8_t buffer[SD_BLOCK_SIZE];
+    sensor_type_t sensor_type;
+} sensor_sd_log_t;
+
 /* Functions ---------------------------------------------------------*/
 uint8_t sd_xfer(uint8_t out);
 void sd_send_command (uint8_t cmd, uint32_t arg, uint8_t crc);
 void cs_low(void);
 void cs_high(void);
 sd_status_t sd_init(void);
-sd_status_t sd_write_block(uint8_t *buf);
+sd_status_t sd_write_sector(const uint8_t *buf, uint32_t sector);
 sd_status_t sd_write_poll(void);
 sd_status_t sd_request_block(uint32_t block);
 sd_status_t sd_read_block(void);
 sd_status_t clear_sd();
+void sd_sensor_log_task(void *arg);
 char *error_str(sd_status_t res);
 
 #endif

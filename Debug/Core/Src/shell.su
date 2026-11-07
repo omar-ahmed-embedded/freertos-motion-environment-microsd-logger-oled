@@ -2,10 +2,10 @@
 ../Core/Src/shell.c:54:6:HAL_UARTEx_RxEventCallback	24	static,ignoring_inline_asm
 ../Core/Src/shell.c:68:6:shell_poll	16	static
 ../Core/Src/shell.c:102:6:shell_execute	24	static
-../Core/Src/shell.c:172:5:parse_int	24	static
-../Core/Src/shell.c:205:6:shell_printf	536	static
-../Core/Src/shell.c:242:6:print_status	24	static
-../Core/Src/shell.c:275:6:decode_print_sd_rx_block	104	static
-../Core/Src/shell.c:333:6:shell_read_task	16	static
-../Core/Src/shell.c:351:6:shell_print_task	536	static
-../Core/Src/shell.c:372:6:HAL_UART_ErrorCallback	32	static
+../Core/Src/shell.c:159:5:parse_int	24	static
+../Core/Src/shell.c:192:6:shell_printf	536	static
+../Core/Src/shell.c:229:6:print_status	24	static
+../Core/Src/shell.c:260:6:decode_print_sd_rx_block	104	static
+../Core/Src/shell.c:318:6:shell_read_task	16	static
+../Core/Src/shell.c:336:6:shell_print_task	536	static
+../Core/Src/shell.c:357:6:HAL_UART_ErrorCallback	32	static

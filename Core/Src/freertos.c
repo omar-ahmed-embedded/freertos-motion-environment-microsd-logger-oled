@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "freertos-app.h"
 #include "mpu6050.h"
-
+#include "sd.h"
 #include "main.h"
 #include "shell.h"
 
@@ -49,9 +49,9 @@
 TaskHandle_t shell_read_task_handle;
 TaskHandle_t shell_print_task_handle;
 TaskHandle_t mpu6050_sample_task_handle;
+TaskHandle_t sd_sensor_log_task_handle;
 
 QueueHandle_t shell_print_queue_handle;
-QueueHandle_t mpu6050_queue_handle;
 QueueHandle_t sd_log_queue_handle;
 /* USER CODE END Variables */
 
@@ -65,14 +65,14 @@ QueueHandle_t sd_log_queue_handle;
 void FreeRTOS_Init(void){
 
 	shell_print_queue_handle = xQueueCreate(4, sizeof(shell_print_msg_t));
-	shell_print_queue_handle = xQueueCreate(4, sizeof(mpu_log_buffer));
+	sd_log_queue_handle = xQueueCreate(4, sizeof(sensor_sd_log_t));
 
 	xTaskCreate(
 			shell_read_task,
 			"shell_read_task",
 			1024,
 			NULL,
-			2,
+			3,
 			&shell_read_task_handle);
 
 	xTaskCreate(
@@ -80,7 +80,7 @@ void FreeRTOS_Init(void){
 			"shell_print_task",
 			1024,
 			NULL,
-			2,
+			3,
 			&shell_print_task_handle);
 
 
@@ -92,6 +92,13 @@ void FreeRTOS_Init(void){
 			1,
 			&mpu6050_sample_task_handle);
 
+	xTaskCreate(
+			sd_sensor_log_task,
+			"sd_sensor_log_task",
+			1024,
+			NULL,
+			2,
+			&sd_sensor_log_task_handle);
 
 
 }

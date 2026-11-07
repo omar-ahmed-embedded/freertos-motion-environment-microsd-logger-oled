@@ -35,7 +35,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include "ff_gen_drv.h"
-
+#include "sd.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -81,7 +81,20 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
+    if (pdrv != 0) {
+        return STA_NOINIT;
+    }
+
+    if (!sd_initialized) {
+        sd_status_t result = sd_init();
+
+        if (result != SD_OK) {
+            Stat = STA_NOINIT;
+            return Stat;
+        }
+    }
+
+	Stat = 0;
     return Stat;
   /* USER CODE END INIT */
 }
@@ -96,7 +109,12 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
+    if (pdrv != 0) {
+        return STA_NOINIT;
+    }
+
+    Stat = sd_initialized ? 0 : STA_NOINIT;
+
     return Stat;
   /* USER CODE END STATUS */
 }
@@ -138,6 +156,25 @@ DRESULT USER_write (
 )
 {
   /* USER CODE BEGIN WRITE */
+ if (pdrv != 0 || buff == NULL || count == 0) {
+		return RES_PARERR;
+	}
+
+	if (!sd_initialized) {
+		return RES_NOTRDY;
+	}
+
+	for (UINT i = 0; i < count; i++) {
+		sd_status_t status = sd_write_sector(buff, sector);
+
+		if (status != SD_OK) {
+			return RES_ERROR;
+		}
+
+		buff += SD_BLOCK_SIZE;
+		sector++;
+	}
+
   /* USER CODE HERE */
     return RES_OK;
   /* USER CODE END WRITE */

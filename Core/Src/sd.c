@@ -18,6 +18,9 @@
 #include "main.h"
 #include "shell.h"
 #include "mpu6050.h"
+#include "ff.h"
+#include "fatfs.h" // USERFatFS and USERPath
+#include "freertos-app.h"
 
 /* Defines ------------------------------------------------------------------*/
 
@@ -25,15 +28,11 @@
 // SD initialization
 uint8_t	 sd_block_addressing = 0;
 uint8_t	 sd_initialized = 0;
-uint32_t sd_next_block = 0;
-uint16_t blocks_written	= 0;
 
-uint8_t sd_buffer_log_flag = 0;
 
 // SD write
 uint8_t  sd_write_in_progress = 0;
 uint32_t sd_write_start_time = 0;
-uint8_t  sd_write_flag = 0;
 uint8_t  sd_write_buffer[SD_BLOCK_SIZE];
 
 // SD read
@@ -168,8 +167,7 @@ sd_status_t sd_init(void){
 	                         | SPI_BAUDRATEPRESCALER_8;     /* 84/8 = 10.5 MHz */
 	  __HAL_SPI_ENABLE(&hspi1);
 
-	  sd_next_block= SD_START_BLOCK;
-	  sd_initialized = 1;
+	 sd_initialized = 1;
 
 	  return SD_OK;
 }
@@ -179,81 +177,69 @@ sd_status_t sd_init(void){
   * @brief Write block in card
   * @retval sd_status_t value
   */
-sd_status_t sd_write_block(uint8_t *buf){
+sd_status_t sd_write_sector(const uint8_t *buf, uint32_t sector)
+{
+    if (!sd_initialized) {
+        return SD_ERROR_NOT_INIT;
+    }
 
-    if (!sd_initialized) {return SD_ERROR_WRITE;}
+    if (buf == NULL) {
+        return SD_ERROR_WRITE;
+    }
 
-    if (sd_write_in_progress) { return SD_BUSY; }
+    uint32_t address = sd_block_addressing
+                     ? sector
+                     : sector * SD_BLOCK_SIZE;
 
     cs_low();
 
-	/* Request writing in the given address block. */
-    address = sd_block_addressing ? sd_next_block : sd_next_block * 512U;
-    r1 = sd_send_read_r1(24, address, 0x01);
-    if (r1 != 0x00) { sd_end_comm(); return SD_ERROR_WRITE; }  // Use the error name from your enum.
+    /* CMD24: write the sector requested by FatFs. */
+    uint8_t r1 = sd_send_read_r1(24, address, 0x01);
 
-    sd_xfer(0xFF);          // gap byte the card expects
-    sd_xfer(0xFE);          // data token: 512 bytes follow
-
-	/* Write buffer */
-    sd_write_start_time = HAL_GetTick();
-    for (uint16_t i = 0; i < SD_BLOCK_SIZE; i++){
-         sd_xfer(buf[i]);
-	}
-
-    /* CRC16 - read and discard. */
-    sd_xfer(0xFF);
-    sd_xfer(0xFF);
-
-
-    /* Check if card accepted the data: bottom 5 bits are 0x05 if accepted. */
-    resp = sd_xfer(0xFF);
-    if ((resp & 0x1F) != 0x05) { sd_end_comm(); return SD_ERROR_WRITE; }
-
-    sd_write_in_progress = 1;
-    // Leave CS low. The card is now programming.
-
-    return SD_BUSY;
-}
-
-
-/**
-  * @brief Poll until card finished programming and finished write
-  * @retval sd_status_t value
-  */
-sd_status_t sd_write_poll(void){
-
-	if (!sd_write_in_progress) { return SD_ERROR_WRITE; }
-
-	/* The card holds MISO low while programming its flash.
-       Usually 1-5 ms, but can exceed 100 ms when the card does
-       internal housekeeping. */
-    if(sd_xfer(0xFF) != 0xFF){
-    	if(HAL_GetTick()-sd_write_start_time > 1000){
-    		sd_end_comm();
-    		 sd_write_in_progress = 0;
-    		return SD_ERROR_WRITE;
-    	}
-    	return SD_BUSY;
+    if (r1 != 0x00) {
+        sd_end_comm();
+        return SD_ERROR_WRITE;
     }
 
-    /* Check for programming errors. Command -> 13 00 00 00 00 01*/
+    sd_xfer(0xFF);
+    sd_xfer(0xFE);  /* Start of data. */
+
+    for (uint16_t i = 0; i < SD_BLOCK_SIZE; i++) {
+        sd_xfer(buf[i]);
+    }
+
+    /* Dummy CRC bytes; assumes SPI data CRC is disabled. */
+    sd_xfer(0xFF);
+    sd_xfer(0xFF);
+
+    uint8_t response = sd_xfer(0xFF);
+
+    if ((response & 0x1F) != 0x05) {
+        sd_end_comm();
+        return SD_ERROR_WRITE;
+    }
+
+    /* Data accepted. Wait for internal flash programming. */
+    uint32_t start = HAL_GetTick();
+
+    while (sd_xfer(0xFF) != 0xFF) {
+        if ((uint32_t)(HAL_GetTick() - start) >= 1000U) {
+            sd_end_comm();
+            return SD_ERROR_TIMEOUT;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    /* CMD13: check programming status. */
     r1 = sd_send_read_r1(13, 0, 0x01);
-    resp = sd_xfer(0xFF);  // CMD13 returns two status bytes.
-    if (r1 != 0x00 || resp != 0x00) {
-    	sd_end_comm();
-        sd_write_in_progress = 0;
-    	return SD_ERROR_WRITE;
-    }
+    response = sd_xfer(0xFF);
 
-    /* End Communication */
     sd_end_comm();
-    sd_write_in_progress = 0;
-    sd_write_flag = 0;
 
-	/* Advance only on success */
-    blocks_written++;
-    sd_next_block++;
+    if (r1 != 0x00 || response != 0x00) {
+        return SD_ERROR_WRITE;
+    }
 
     return SD_OK;
 }
@@ -334,7 +320,7 @@ sd_status_t sd_read_block(void){
   * @brief Clear written data on sd
   * @retval sd_status_t
   */
-sd_status_t clear_sd(){
+/*sd_status_t clear_sd(){
 
     uint8_t empty_buffer[SD_BLOCK_SIZE] = {0};
 
@@ -347,13 +333,13 @@ sd_status_t clear_sd(){
           return SD_ERROR_NOT_INIT;
     }
 
-    /* Let active transfers finish before clearing. */
+    /* Let active transfers finish before clearing.
     if (sd_write_in_progress || sd_read_request_in_progress ||
          HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {
          return SD_BUSY;
     }
 
-    /* Overwrite each recorded block with zeros. */
+    /* Overwrite each recorded block with zeros.
     for (uint32_t block = SD_START_BLOCK; block < sd_next_block; block++){
 
     	sd_next_block = block;
@@ -371,7 +357,7 @@ sd_status_t clear_sd(){
         if (result != SD_OK) { return result; }
     }
 
-    /* Discard queued requests and buffered sensor data. */
+    /* Discard queued requests and buffered sensor data.
      sd_write_flag = 0;
      sd_read_flag = 0;
      sd_read_failed = 0;
@@ -387,12 +373,86 @@ sd_status_t clear_sd(){
          mpu_log_buffer[i] = 0;
      }
 
-     /* Start the next log at the beginning of the logging area. */
+     /* Start the next log at the beginning of the logging area.
      sd_next_block = SD_START_BLOCK;
      blocks_written = 0;
 
 
      return SD_OK;
+}
+*/
+
+
+/**
+  * @brief sd sensor log task
+  * @retval
+  */
+void sd_sensor_log_task(void *arg){
+
+	sensor_sd_log_t log;
+	static FIL mpu_file;
+	FRESULT result;
+	UINT bytes_written;
+
+	/* Makes the card’s filesystem available to FatFs.*/
+	result = f_mount(&USERFatFS, USERPath, 1);
+	 if (result != FR_OK) {
+	        shell_printf("SD mount failed: %d\r\n", (int)result);
+	        //vTaskDelete(NULL);
+	        return;
+	 }
+
+
+
+	for(;;){
+
+		xQueueReceive(sd_log_queue_handle, &log, portMAX_DELAY);
+
+        /* Log MPU6050*/
+		if(log.sensor_type == SENSOR_MPU6050){
+			/* Create file for MPU6050*/
+			result = f_open(&mpu_file, "0:/MPU6050.BIN", FA_WRITE | FA_OPEN_ALWAYS);
+
+			if (result != FR_OK) {
+				shell_printf("File open failed: %d\r\n", (int)result);
+				vTaskDelete(NULL);
+				return;
+			}
+
+			/* Move to the end so new readings are appended. */
+			f_lseek(&mpu_file, f_size(&mpu_file));
+
+			result = f_write(&mpu_file,log.buffer, SD_BLOCK_SIZE, &bytes_written);
+
+			if (result != FR_OK || bytes_written != SD_BLOCK_SIZE) {
+				shell_printf( "MPU write failed: result=%d, bytes=%u\r\n", (int)result, (unsigned int)bytes_written);
+				break;
+			}
+			/* Flush this batch while keeping the file open. */
+			result = f_sync(&mpu_file);
+
+			if (result != FR_OK) {
+				shell_printf("MPU sync failed: %d\r\n",
+							 (int)result);
+				break;
+			}
+
+			shell_printf("MPU data saved.\r\n");
+
+			result = f_close(&mpu_file);
+
+			if (result != FR_OK) {
+				shell_printf("File close failed: %d\r\n", (int)result);
+			}
+		}
+		/* Log BME280*/
+		else if (log.sensor_type == SENSOR_BME280){
+
+		}
+		else{
+			shell_printf("Unkown sensor type!\r\n");
+		}
+	}
 }
 
 

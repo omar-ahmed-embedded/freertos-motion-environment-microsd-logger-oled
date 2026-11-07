@@ -120,22 +120,9 @@ void shell_execute(char *msg){
 		shell_printf("%-24s%s\r\n", "clear sd:", "clears logged data in sd and resets logging buffers");
 
 	}	// Print a specefic block
-	else if (strncmp(msg, "read block", 10) == 0){
-		if (sd_read_flag) {
-		        shell_printf("An SD read is already waiting or running.\r\n");
-		}
-		else if(!parse_int(msg+11, &block) || block < SD_START_BLOCK|| block >= sd_next_block){
-			shell_printf("Error: invalid block address!\r\n");
 
-		}
-		else {
-			sd_rx_block = block;
-			sd_read_failed = 0;
-			sd_read_flag = 1;
-		}
-	}
 	else if (strncmp(msg, "clear sd", 8) == 0){
-		result = clear_sd();
+
 		shell_printf("\r\nClearing sd...\r\n");
 		if (result == SD_OK){ shell_printf("SD cleared and logging buffers reset. \r\n"); }
 		else { shell_printf("Error sd_not cleared: error %s \r\n", error_str(result)); }
@@ -254,11 +241,9 @@ void print_status(void){
     	shell_printf("SD card has not been successfully intialized\r\n");
     }
 
-	// Number oflocks written
-	shell_printf("Number of blocks written this session: %u\r\n", blocks_written);
 
-	// Next block
-	shell_printf("Next block written: %u\r\n", sd_next_block);
+
+
 
 	// Logging status
 	char *logging_status = pause_sd_logging ? "paused" : "running";

@@ -16,7 +16,7 @@
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_i2c.h"
 #include "shell.h"
-
+#include "sd.h"
 /* Defines ------------------------------------------------------------*/
 #define I2C_RX_FRAME_SIZE	14
 #define LOG_BUFFER_SIZE	512
@@ -39,7 +39,7 @@ extern volatile uint8_t i2c_sample_flag;
 extern volatile uint8_t i2c_frame_ready ;
 
 extern uint8_t i2c_rx_buffer[I2C_RX_FRAME_SIZE];
-extern uint8_t mpu_log_buffer[LOG_BUFFER_SIZE];
+//extern uint8_t mpu_log_buffer[LOG_BUFFER_SIZE];
 
 extern int i2c_sample_count;
 extern uint16_t indx;
@@ -59,6 +59,7 @@ typedef enum {
 	MPU_ERROR_AFS_SEL,		// Config accl
 
 } mpu_status_t;
+
 
 
 
