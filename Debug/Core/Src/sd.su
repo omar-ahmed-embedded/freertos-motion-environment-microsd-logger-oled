@@ -10,4 +10,4 @@
 ../Core/Src/sd.c:253:13:sd_request_block	16	static
 ../Core/Src/sd.c:277:13:sd_read_block	24	static
 ../Core/Src/sd.c:325:6:sd_sensor_log_task	536	static
-../Core/Src/sd.c:400:7:error_str	16	static
+../Core/Src/sd.c:430:7:error_str	16	static

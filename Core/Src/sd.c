@@ -338,7 +338,6 @@ void sd_sensor_log_task(void *arg){
 	 }
 
 
-
 	for(;;){
 
 		xQueueReceive(sd_log_queue_handle, &log, portMAX_DELAY);
@@ -360,21 +359,21 @@ void sd_sensor_log_task(void *arg){
 			result = f_write(&mpu_file,log.buffer, SD_BLOCK_SIZE, &bytes_written);
 
 			if (result != FR_OK || bytes_written != SD_BLOCK_SIZE) {
-				shell_printf( "MPU write failed: result=%d, bytes=%u\r\n", (int)result, (unsigned int)bytes_written);
-				break;
-			}
-			/* Flush this batch while keeping the file open. */
-			result = f_sync(&mpu_file);
+			    shell_printf("MPU write failed: result=%d, bytes=%u\r\n",
+			                 (int)result, (unsigned int)bytes_written);
 
-			if (result != FR_OK) {
-				shell_printf("MPU sync failed: %d\r\n",
-							 (int)result);
-				break;
+			    FRESULT close_result = f_close(&mpu_file);
+
+			    if (close_result != FR_OK) {
+			        shell_printf("MPU close failed: %d\r\n", (int)close_result);
+			    }
+
+			    continue;
 			}
 
 			shell_printf("MPU data saved.\r\n");
 
-			result = f_close(&mpu_file);
+			result = f_close(&mpu_file); // Also flushes the metadata
 
 			if (result != FR_OK) {
 				shell_printf("File close failed: %d\r\n", (int)result);
@@ -382,7 +381,38 @@ void sd_sensor_log_task(void *arg){
 		}
 		/* Log BME280*/
 		else if (log.sensor_type == SENSOR_BME280){
+		    static FIL bme_file;
 
+		    result = f_open(&bme_file, "0:/BME280.BIN", FA_WRITE | FA_OPEN_APPEND);
+
+		    if (result != FR_OK) {
+		        shell_printf("BME file open failed: %d\r\n", (int)result);
+		        continue;
+		    }
+
+		    result = f_write(&bme_file, log.buffer, SD_BLOCK_SIZE, &bytes_written);
+
+		    if (result != FR_OK || bytes_written != SD_BLOCK_SIZE) {
+		        shell_printf("BME write failed: result=%d, bytes=%u\r\n",
+		                     (int)result, (unsigned int)bytes_written);
+
+		        FRESULT close_result = f_close(&bme_file);
+
+		        if (close_result != FR_OK) {
+		            shell_printf("BME close failed: %d\r\n", (int)close_result);
+		        }
+
+		        continue;
+		    }
+
+		    result = f_close(&bme_file);
+
+		    if (result != FR_OK) {
+		        shell_printf("BME close failed: %d\r\n", (int)result);
+		        continue;
+		    }
+
+		    shell_printf("BME data saved.\r\n");
 		}
 		else{
 			shell_printf("Unkown sensor type!\r\n");

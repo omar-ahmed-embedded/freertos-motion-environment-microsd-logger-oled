@@ -48,7 +48,7 @@
 
 #ifndef _BME280_H
 #define _BME280_H
-#define I2C_RX_FRAME_SIZE 512
+
 /*! CPP guard */
 #ifdef __cplusplus
 extern "C" {
@@ -58,7 +58,11 @@ extern "C" {
 #include "bme280_defs.h"
 
 
-/* Variables */
+/* Define */
+#define LOG_BUFFER_SIZE	512
+#define BME280_I2C_RX_FRAME_SIZE (3U * sizeof(double))
+#define BME280_FRAME_PERBLOCK		(LOG_BUFFER_SIZE/BME280_I2C_RX_FRAME_SIZE)  //21
+#define BME280_LOG_DATA_SIZE		(BME280_FRAME_PERBLOCK*BME280_I2C_RX_FRAME_SIZE)		//504
 
 /**
  * \ingroup bme280

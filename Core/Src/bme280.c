@@ -43,6 +43,8 @@
 #include "freertos-app.h"
 #include "main.h"
 #include "shell.h"
+#include  "sd.h"
+#include <string.h>
 /**\name Internal macros */
 /* To identify osr settings selected by user */
 #define OVERSAMPLING_SETTINGS    UINT8_C(0x07)
@@ -69,6 +71,31 @@ static BME280_INTF_RET_TYPE platform_read(uint8_t reg, uint8_t *data, uint32_t l
         reg,
         I2C_MEMADD_SIZE_8BIT,
         data,
+        (uint16_t)length,
+        100
+    );
+
+    return (result == HAL_OK) ? 0 : -1;
+}
+
+/**
+  * @brief bme280 read
+  * @retval status
+  */
+static BME280_INTF_RET_TYPE platform_write(uint8_t reg, const uint8_t *data, uint32_t length, void *context)
+{
+    if (context == NULL || data == NULL || length == 0 || length > UINT16_MAX) {
+        return -1;
+    }
+
+    uint8_t address = *(uint8_t *)context;
+
+    HAL_StatusTypeDef result = HAL_I2C_Mem_Write(
+        &hi2c1,
+        (uint16_t)(address << 1),
+        reg,
+        I2C_MEMADD_SIZE_8BIT,
+        (uint8_t *)data,
         (uint16_t)length,
         100
     );
@@ -108,10 +135,15 @@ void bme280_sample_task(void *arg){
 
 	struct bme280_dev sensor = {0}; 	//Holds the communication callbacks, interface information, and calibration data.
 	struct bme280_settings settings = {0};
-	struct bme280_data bme280_log_buffer = {0};
+	struct bme280_data bme280_reading = {0}; // 3 members * 8 bytes
 
 	uint32_t conversion_delay_us;
 	int8_t result;			// BME280_OK on success
+	uint16_t indx = 0;
+
+	sensor_sd_log_t bme280_sensor_sd_log = {
+	    .sensor_type = SENSOR_BME280
+	};
 
 	/* Tell Bosch’s driver that we are using I2C. */
 	sensor.intf = BME280_I2C_INTF;
@@ -121,7 +153,7 @@ void bme280_sample_task(void *arg){
 
 	/* Assign our functions to Bosch’s callback fields */
 	sensor.read = platform_read;
-	//sensor.write = platform_write;
+	sensor.write = platform_write;
 	sensor.delay_us = platform_delay_us;
 
 	/* Organize using I2c with MPU6050 with a semaphore */
@@ -164,7 +196,6 @@ void bme280_sample_task(void *arg){
 
 	 TickType_t last_wake = xTaskGetTickCount();
 
-
 	 for (;;) {
 		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 
@@ -176,15 +207,53 @@ void bme280_sample_task(void *arg){
 			 platform_delay_us(conversion_delay_us, NULL);	// Wait long enough for internal measurement process to finish.
 
 			 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+			 result = bme280_get_sensor_data(BME280_ALL, &bme280_reading, &sensor);			// Read sensor and store in buffer
+			 xSemaphoreGive(i2c_mutex_handle);
 
-			 result = bme280_get_sensor_data(BME280_ALL, &bme280_log_buffer, &sensor);
-
+			 /* Fille log buffer and queue for sd log*/
 			 if (result == BME280_OK) {
-			     shell_printf("BME sample ready.\r\n");
+				 if(indx <= BME280_LOG_DATA_SIZE-BME280_I2C_RX_FRAME_SIZE){ 		// Store readings in log buffer
+					memcpy(&bme280_sensor_sd_log.buffer[indx],
+							&bme280_reading.pressure,
+							sizeof(bme280_reading.pressure));
+
+					indx += sizeof(bme280_reading.pressure);
+
+					memcpy(&bme280_sensor_sd_log.buffer[indx],
+							&bme280_reading.temperature,
+							sizeof(bme280_reading.temperature));
+
+					indx += sizeof(bme280_reading.temperature);
+
+					memcpy(&bme280_sensor_sd_log.buffer[indx],
+							&bme280_reading.humidity,
+							sizeof(bme280_reading.humidity));
+
+					indx += sizeof(bme280_reading.humidity);
+				 }
+				// Fill the remaining eight bytes with padding. */
+				if (indx == BME280_LOG_DATA_SIZE){		// At index 504
+				    memset(&bme280_sensor_sd_log.buffer[indx], 0xFF,
+				           SD_BLOCK_SIZE - indx);
+
+					shell_printf("\r\nBME280 log data ready.\r\n");
+
+					/* Queue a copy of the completed log buffer. */
+					if (xQueueSend(sd_log_queue_handle,  &bme280_sensor_sd_log,
+							pdMS_TO_TICKS(250)) == pdPASS){
+						indx = 0;
+					}
+					else{
+						shell_printf("SD log queue full; buffer retained.\r\n");
+					}
+				}
+
 			 }
 			 else {
                 shell_printf("BME read failed: %d\r\n", (int)result);
 			 }
+
+
         }
 		else {
 			shell_printf("BME trigger failed: %d\r\n", (int)result);
@@ -196,16 +265,6 @@ void bme280_sample_task(void *arg){
 
 }
 // USER CODE END
-
-
-
-
-
-
-
-
-
-
 
 
 
