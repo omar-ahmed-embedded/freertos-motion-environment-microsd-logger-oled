@@ -69,7 +69,7 @@ main-build: freertos-motion-environment-microsd-logger-oled.elf secondary-output
 
 # Tool invocations
 freertos-motion-environment-microsd-logger-oled.elf freertos-motion-environment-microsd-logger-oled.map: $(OBJS) $(USER_OBJS) C:\Users\omars\dev\projects\freertos-motion-environment-microsd-logger-oled\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "freertos-motion-environment-microsd-logger-oled.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\omars\dev\projects\freertos-motion-environment-microsd-logger-oled\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="freertos-motion-environment-microsd-logger-oled.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "freertos-motion-environment-microsd-logger-oled.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\omars\dev\projects\freertos-motion-environment-microsd-logger-oled\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="freertos-motion-environment-microsd-logger-oled.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

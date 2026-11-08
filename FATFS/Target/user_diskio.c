@@ -36,6 +36,8 @@
 #include <string.h>
 #include "ff_gen_drv.h"
 #include "sd.h"
+#include "FreeRTOS.h"
+#include "task.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -135,7 +137,30 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
-    return RES_OK;
+	if (pdrv != 0 || buff == NULL || count == 0 ||
+	        (uint32_t)(count - 1U) > UINT32_MAX - (uint32_t)sector) {
+	        return RES_PARERR;
+	    }
+
+	    if (!sd_initialized) {
+	        return RES_NOTRDY;
+	    }
+
+	    for (UINT i = 0; i < count; i++) {
+	        sd_status_t status = sd_read_sector((uint32_t)sector);
+
+	        if (status != SD_OK) {
+	            return RES_ERROR;
+	        }
+
+	        /* Copy the completed sector into FatFs's destination. */
+	        memcpy(buff, sd_read_buffer, SD_BLOCK_SIZE);
+
+	        buff += SD_BLOCK_SIZE;
+	        sector++;
+	    }
+
+	    return RES_OK;
   /* USER CODE END READ */
 }
 
@@ -196,8 +221,49 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
-    DRESULT res = RES_ERROR;
-    return res;
+    if (pdrv != 0) {
+        return RES_PARERR;
+    }
+    if (!sd_initialized) {
+        return RES_NOTRDY;
+    }
+
+    switch (cmd) {
+    case CTRL_SYNC:
+        /* USER_write waits for programming and status verification before
+         * returning. There is no deferred write to flush in this driver. */
+        return sd_read_request_in_progress ? RES_ERROR : RES_OK;
+
+    case GET_SECTOR_SIZE:
+        if (buff == NULL) {
+            return RES_PARERR;
+        }
+        *(WORD *)buff = SD_BLOCK_SIZE;
+        return RES_OK;
+
+    case GET_SECTOR_COUNT: {
+        uint32_t sectors;
+        if (buff == NULL) {
+            return RES_PARERR;
+        }
+        if (sd_get_sector_count(&sectors) != SD_OK) {
+            return RES_ERROR;
+        }
+        *(DWORD *)buff = (DWORD)sectors;
+        return RES_OK;
+    }
+
+    case GET_BLOCK_SIZE:
+        if (buff == NULL) {
+            return RES_PARERR;
+        }
+        /* Conservative allocation alignment; no erase/TRIM is issued. */
+        *(DWORD *)buff = 1U;
+        return RES_OK;
+
+    default:
+        return RES_PARERR;
+    }
   /* USER CODE END IOCTL */
 }
 #endif /* _USE_IOCTL == 1 */

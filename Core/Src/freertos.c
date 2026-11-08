@@ -56,6 +56,7 @@ QueueHandle_t shell_print_queue_handle;
 QueueHandle_t sd_log_queue_handle;
 
 SemaphoreHandle_t i2c_mutex_handle;
+SemaphoreHandle_t sd_mutex_handle;
 
 
 /* USER CODE END Variables */
@@ -73,11 +74,12 @@ void FreeRTOS_Init(void){
 	sd_log_queue_handle = xQueueCreate(4, sizeof(sensor_sd_log_t));
 
 	i2c_mutex_handle = xSemaphoreCreateMutex();
+	sd_mutex_handle = xSemaphoreCreateMutex();
 
 	xTaskCreate(
 			shell_read_task,
 			"shell_read_task",
-			1024,
+			512,
 			NULL,
 			3,
 			&shell_read_task_handle);
@@ -85,16 +87,15 @@ void FreeRTOS_Init(void){
 	xTaskCreate(
 			shell_print_task,
 			"shell_print_task",
-			1024,
+			512,
 			NULL,
 			3,
 			&shell_print_task_handle);
 
-
 	xTaskCreate(
 			mpu6050_sample_task,
 			"mpu6050_sample_task",
-			1024,
+			512,
 			NULL,
 			1,
 			&mpu6050_sample_task_handle);
@@ -102,7 +103,7 @@ void FreeRTOS_Init(void){
 	xTaskCreate(
 			bme280_sample_task,
 			"bme280_sample_task",
-			1024,
+			512,
 			NULL,
 			1,
 			&bme280_sample_task_handle);
@@ -110,7 +111,7 @@ void FreeRTOS_Init(void){
 	xTaskCreate(
 			sd_sensor_log_task,
 			"sd_sensor_log_task",
-			1024,
+			512,
 			NULL,
 			2,
 			&sd_sensor_log_task_handle);

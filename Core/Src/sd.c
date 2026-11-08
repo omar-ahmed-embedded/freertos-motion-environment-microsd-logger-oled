@@ -250,70 +250,203 @@ sd_status_t sd_write_sector(const uint8_t *buf, uint32_t sector)
   * @retval sd_status_t
   */
 
-sd_status_t sd_request_block(uint32_t block){
+/**
+  * @brief Read the CSD register and report capacity in 512-byte sectors.
+  * @retval SD_OK on success, otherwise an SD error.
+  */
+sd_status_t sd_get_sector_count(uint32_t *sector_count)
+{
+    uint8_t csd[16];
+    uint8_t token;
+    uint64_t sectors;
 
-	if (!sd_initialized) { return SD_ERROR_READ; }
+    if (!sd_initialized) {
+        return SD_ERROR_NOT_INIT;
+    }
+    if (sector_count == NULL) {
+        return SD_ERROR_READ;
+    }
+    if (sd_write_in_progress || sd_read_request_in_progress) {
+        return SD_BUSY;
+    }
 
-	if (sd_write_in_progress || sd_read_request_in_progress) { return SD_BUSY; }
+    cs_low();
+    if (sd_send_read_r1(9, 0, 0x01) != 0x00) {
+        sd_end_comm();
+        return SD_ERROR_READ;
+    }
 
-	cs_low();
-	/* Request block. Command ->  17 00 00 00 00 01*/
-	address = sd_block_addressing ? block : block * 512;
-	r1 = sd_send_read_r1(17, address, 0x01);	// r1 = 0x00 when accepted
-	if (r1 != 0x00){ sd_end_comm();  return SD_ERROR_READ; }
+    uint32_t start = HAL_GetTick();
+    do {
+        token = sd_xfer(0xFF);
+        if (token == 0xFF) {
+            if ((uint32_t)(HAL_GetTick() - start) >= 1000U) {
+                sd_end_comm();
+                return SD_ERROR_TIMEOUT;
+            }
+            vTaskDelay(1);
+        }
+    } while (token == 0xFF);
 
-	sd_read_start_time = HAL_GetTick();
-	sd_read_request_in_progress = 1;
+    if (token != 0xFE) {
+        sd_end_comm();
+        return SD_ERROR_READ;
+    }
+    for (uint16_t i = 0; i < sizeof(csd); i++) {
+        csd[i] = sd_xfer(0xFF);
+    }
+    sd_xfer(0xFF); /* Discard CRC16 (SPI data CRC is disabled). */
+    sd_xfer(0xFF);
+    sd_end_comm();
 
-	return SD_BUSY;
+    if ((csd[0] >> 6) == 1U) {
+        /* CSD v2: SDHC/SDXC capacity = (C_SIZE + 1) * 512 KiB. */
+        uint32_t c_size = ((uint32_t)(csd[7] & 0x3FU) << 16)
+                        | ((uint32_t)csd[8] << 8) | csd[9];
+        sectors = ((uint64_t)c_size + 1U) * 1024U;
+    } else if ((csd[0] >> 6) == 0U) {
+        /* CSD v1: capacity = (C_SIZE + 1) * 2^(C_SIZE_MULT+2)
+         *                              * 2^READ_BL_LEN bytes. */
+        uint32_t read_bl_len = csd[5] & 0x0FU;
+        uint32_t c_size = ((uint32_t)(csd[6] & 0x03U) << 10)
+                        | ((uint32_t)csd[7] << 2) | (csd[8] >> 6);
+        uint32_t c_size_mult = ((uint32_t)(csd[9] & 0x03U) << 1)
+                             | (csd[10] >> 7);
+        if (read_bl_len < 9U || read_bl_len > 11U) {
+            return SD_ERROR_READ;
+        }
+        sectors = (((uint64_t)c_size + 1U)
+                  << (c_size_mult + 2U + read_bl_len)) / SD_BLOCK_SIZE;
+    } else {
+        return SD_ERROR_READ;
+    }
+
+    if (sectors == 0 || sectors > UINT32_MAX) {
+        return SD_ERROR_READ;
+    }
+    *sector_count = (uint32_t)sectors;
+    return SD_OK;
 }
 
-
 /**
-  * @brief read sd block read
-  * @retval sd_status_t
+  * @brief Read one physical sector into sd_read_buffer.
+  * @retval SD_OK on success, otherwise an SD error.
   */
+sd_status_t sd_read_sector(uint32_t block)
+{
+    if (!sd_initialized) {
+        return SD_ERROR_NOT_INIT;
+    }
 
-sd_status_t sd_read_block(void){
+    /* SDSC cards use byte addresses; prevent multiplication overflow. */
+    if (!sd_block_addressing && block > UINT32_MAX / SD_BLOCK_SIZE) {
+        return SD_ERROR_READ;
+    }
 
-	uint8_t token;
+    cs_low();
 
+    /* CMD17: request one sector. */
+    uint8_t response = sd_send_read_r1(17, address, 0x01);
 
-	if (!sd_read_request_in_progress) { return SD_ERROR_READ; }
+    if (response != 0x00) {
+        sd_end_comm();
+        return SD_ERROR_READ;
+    }
 
-	/* Error timeout*/
-	if (HAL_GetTick() - sd_read_start_time > 1000){
-		sd_end_comm();
-		sd_read_request_in_progress = 0;
-		return SD_ERROR_TIMEOUT;
-	}
+    /* Wait for the start-of-data token. */
+    uint32_t start = HAL_GetTick();
+    uint8_t token;
 
+    while ((token = sd_xfer(0xFF)) == 0xFF) {
+        if ((uint32_t)(HAL_GetTick() - start) >= 1000U) {
+            sd_end_comm();
+            return SD_ERROR_TIMEOUT;
+        }
 
-	/* Expect 0xFE to receive the block after or 0xFF while the card fetches from flash */
-	token = sd_xfer(0xFF);
-	if (token == 0xFF) { return SD_BUSY; }
-	if (token != 0xFE) {
-		sd_end_comm();
-	    sd_read_request_in_progress = 0;
-	    return SD_ERROR_READ;
-	}
+        vTaskDelay(1);
+    }
 
+    if (token != 0xFE) {
+        sd_end_comm();
+        return SD_ERROR_READ;
+    }
 
-	/* Read block */
-	for (uint16_t i = 0; i < SD_BLOCK_SIZE; i++){
-		sd_read_buffer[i] = sd_xfer(0xFF);
-	}
+    /* Receive the 512-byte sector. */
+    for (uint16_t i = 0; i < SD_BLOCK_SIZE; i++) {
+        sd_read_buffer[i] = sd_xfer(0xFF);
+    }
 
-	/* CRC16 - read and discard. */
-	sd_xfer(0xFF);
-	sd_xfer(0xFF);
+    /* Receive and discard CRC16; SPI data CRC is disabled. */
+    sd_xfer(0xFF);
+    sd_xfer(0xFF);
 
-    /* End Communication */
     sd_end_comm();
-    sd_read_request_in_progress = 0;
-    sd_read_flag = 0;
 
     return SD_OK;
+}
+
+/**
+  * @brief read sd file
+  * @retval sd_status_t
+  */
+FRESULT sd_read_file(const TCHAR *filename)
+{
+
+    /* Static storage to avoid placing these large objects on the task stack*/
+    static FIL file;
+    static uint8_t buffer[SD_BLOCK_SIZE];
+
+
+    FRESULT result;
+    UINT bytes_read;
+
+    if (filename == NULL) {
+        return FR_INVALID_PARAMETER;
+    }
+
+    xSemaphoreTake(sd_mutex_handle, portMAX_DELAY);
+
+    result = f_open(&file, filename, FA_READ);
+
+    if (result != FR_OK) {
+        xSemaphoreGive(sd_mutex_handle);
+        return result;
+    }
+
+    for (;;) {
+        result = f_read(&file, buffer, sizeof(buffer), &bytes_read);
+
+        if (result != FR_OK) {
+            break;
+        }
+
+        if (bytes_read == 0) {
+            break; /* End of file. */
+        }
+
+        /* Print this chunk, 16 bytes per line. */
+        for (UINT row = 0; row < bytes_read; row += 16U) {
+            char line[16U * 3U + 1U];
+            UINT position = 0;
+
+            /* Print the bytes received, 16 per line. */
+            for (UINT i = 0; i < bytes_read; i++) {
+                shell_printf("%02X ", (unsigned int)buffer[i]);
+
+                if ((i + 1U) % 16U == 0U || i + 1U == bytes_read) {			// Every 16 line, or after bytes read
+                    shell_printf("\r\n");
+                }
+            }
+        }
+    }
+
+    /* Close even if reading failed. */
+    FRESULT close_result = f_close(&file);
+
+    xSemaphoreGive(sd_mutex_handle);
+
+    /* Preserve a read error; otherwise report the close result. */
+    return (result != FR_OK) ? result : close_result;
 }
 
 
@@ -331,9 +464,10 @@ void sd_sensor_log_task(void *arg){
 
 	/* Makes the card’s filesystem available to FatFs.*/
 	result = f_mount(&USERFatFS, USERPath, 1);
+
 	 if (result != FR_OK) {
 	        shell_printf("SD mount failed: %d\r\n", (int)result);
-	        //vTaskDelete(NULL);
+	        vTaskDelete(NULL);
 	        return;
 	 }
 
@@ -345,12 +479,14 @@ void sd_sensor_log_task(void *arg){
         /* Log MPU6050*/
 		if(log.sensor_type == SENSOR_MPU6050){
 			/* Create file for MPU6050*/
+			xSemaphoreTake(sd_mutex_handle, portMAX_DELAY);			// Shared with sd_read
+
 			result = f_open(&mpu_file, "0:/MPU6050.BIN", FA_WRITE | FA_OPEN_ALWAYS);
 
 			if (result != FR_OK) {
 				shell_printf("File open failed: %d\r\n", (int)result);
-				vTaskDelete(NULL);
-				return;
+				xSemaphoreGive(sd_mutex_handle);
+				continue;
 			}
 
 			/* Move to the end so new readings are appended. */
@@ -367,7 +503,7 @@ void sd_sensor_log_task(void *arg){
 			    if (close_result != FR_OK) {
 			        shell_printf("MPU close failed: %d\r\n", (int)close_result);
 			    }
-
+			    xSemaphoreGive(sd_mutex_handle);
 			    continue;
 			}
 

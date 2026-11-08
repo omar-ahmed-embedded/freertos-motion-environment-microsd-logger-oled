@@ -101,7 +101,7 @@ void shell_poll(void){
   */
 void shell_execute(char *msg){
 
-	uint32_t block = 0;		// stroul return unsigned long, which is 32 bits on ARM32 M4
+	//uint32_t block = 0;		// stroul return unsigned long, which is 32 bits on ARM32 M4
 	sd_status_t result = 0;
 
 	// Check msg
@@ -241,15 +241,9 @@ void print_status(void){
     	shell_printf("SD card has not been successfully intialized\r\n");
     }
 
-
-
-
-
 	// Logging status
 	char *logging_status = pause_sd_logging ? "paused" : "running";
 	shell_printf("Logging status: %s\r\n", logging_status);
-
-
 }
 
 
@@ -277,7 +271,7 @@ void decode_print_sd_rx_block(uint8_t *read_buffer){
 	float temp_c;
 
 
-	for (uint16_t i = 0; i < MPU_LOG_DATA_SIZE; i += I2C_RX_FRAME_SIZE){
+	for (uint16_t i = 0; i < MPU_LOG_DATA_SIZE; i += MPU_I2C_RX_FRAME_SIZE){
 
 		uint8_t *frame = read_buffer + i;
 		// Raw bytes

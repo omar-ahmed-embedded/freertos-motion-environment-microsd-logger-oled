@@ -73,9 +73,9 @@ void cs_low(void);
 void cs_high(void);
 sd_status_t sd_init(void);
 sd_status_t sd_write_sector(const uint8_t *buf, uint32_t sector);
-sd_status_t sd_write_poll(void);
-sd_status_t sd_request_block(uint32_t block);
-sd_status_t sd_read_block(void);
+sd_status_t sd_read_sector(uint32_t block);
+sd_status_t sd_get_sector_count(uint32_t *sector_count);
+
 sd_status_t clear_sd();
 void sd_sensor_log_task(void *arg);
 char *error_str(sd_status_t res);

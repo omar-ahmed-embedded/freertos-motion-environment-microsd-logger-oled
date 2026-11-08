@@ -23,12 +23,12 @@ extern I2C_HandleTypeDef hi2c1;
 volatile uint8_t i2c_sample_flag = 0;
 volatile uint8_t i2c_frame_ready  = 0;
 
-uint8_t i2c_mpu6050_rx_buffer[I2C_RX_FRAME_SIZE];
+uint8_t i2c_mpu6050_rx_buffer[MPU_I2C_RX_FRAME_SIZE];
 
 
 int i2c_sample_count = 0;
 uint8_t start_timer = 0;
-uint8_t dsplay_live_mpu = 0;
+uint8_t display_live_mpu = 0;
 
 /**
 * @brief mpu6050 initialization
@@ -66,14 +66,14 @@ mpu_status_t mpu6050_init(void){
 	if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDR << 1, MPU6050_GYRO_CONFIG_REG, I2C_MEMADD_SIZE_8BIT, &gyro_cfg, 1, 100) != HAL_OK){
 		return MPU_ERROR_FS_SEL;
 	}
-	 shell_printf("Gyro range set at ±250 °/s\r\n");
+
 
 	/* Config acceleration range. */
 	uint8_t accel_cfg = (0 << 3);  // AFS_SEL=0 -> ±2 g
 	if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDR << 1, MPU6050_ACCEL_CONFIG_REG, I2C_MEMADD_SIZE_8BIT, &accel_cfg, 1, 100) != HAL_OK){
 		return MPU_ERROR_AFS_SEL;
 	}
-	shell_printf("Accelerometer range set at ±2 g\r\n");
+
 
 	return MPU_OK;
 }
@@ -129,21 +129,23 @@ void mpu6050_sample_task(void *arg){
 	uint16_t indx = 0;
 	for(;;){
 
+		xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+
 		// Sensor by defualt updates its registers with 8kHz (DLPF_CFG = 0)
-		if (HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
-							I2C_MEMADD_SIZE_8BIT, i2c_mpu6050_rx_buffer, I2C_RX_FRAME_SIZE) != HAL_OK){
+		if (HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
+					I2C_MEMADD_SIZE_8BIT, i2c_mpu6050_rx_buffer, MPU_I2C_RX_FRAME_SIZE,100) != HAL_OK){
 			shell_printf("MPU6050 read error!\r\n");
 		    vTaskDelay(pdMS_TO_TICKS(250));
 		    continue;
 		}
 
-		/* Wait until DMA completion callback*/
-		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+		xSemaphoreGive(i2c_mutex_handle);
 
+		convert_display_live_sensor();
 		  /* Save received frame bytes in buffer */
 
-		if(indx <= MPU_LOG_DATA_SIZE-I2C_RX_FRAME_SIZE){
-			for (uint8_t i = 0; i < I2C_RX_FRAME_SIZE; i++){
+		if(indx <= MPU_LOG_DATA_SIZE-MPU_I2C_RX_FRAME_SIZE){
+			for (uint8_t i = 0; i < MPU_I2C_RX_FRAME_SIZE; i++){
 				mpu_sensor_sd_log.buffer[indx++] = i2c_mpu6050_rx_buffer[i];			// Add 14 received to log buffer
 			}
 		}
@@ -180,14 +182,7 @@ void mpu6050_sample_task(void *arg){
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
-        BaseType_t higher_priority_task_woken = pdFALSE;
-
-        vTaskNotifyGiveFromISR(
-            mpu6050_sample_task_handle,
-            &higher_priority_task_woken
-        );
-
-        portYIELD_FROM_ISR(higher_priority_task_woken);
+		// Do nothing
 
 	}
 }
