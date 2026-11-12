@@ -232,7 +232,7 @@ DRESULT USER_ioctl (
     case CTRL_SYNC:
         /* USER_write waits for programming and status verification before
          * returning. There is no deferred write to flush in this driver. */
-        return sd_read_request_in_progress ? RES_ERROR : RES_OK;
+        //return sd_read_request_in_progress ? RES_ERROR : RES_OK;
 
     case GET_SECTOR_SIZE:
         if (buff == NULL) {

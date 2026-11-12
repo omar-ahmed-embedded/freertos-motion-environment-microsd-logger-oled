@@ -29,17 +29,8 @@ extern SPI_HandleTypeDef hspi1;
 extern uint8_t	sd_initialized;
 extern uint8_t	sd_block_addressing;
 
-
-
-
-
-
-extern uint8_t  sd_write_buffer[SD_BLOCK_SIZE];
-
 extern uint32_t sd_rx_block;
-extern uint8_t  sd_read_flag;
-extern uint8_t  sd_read_failed;
-extern uint8_t  sd_read_request_in_progress;
+
 extern uint8_t  sd_read_buffer[SD_BLOCK_SIZE];
 
 typedef enum {

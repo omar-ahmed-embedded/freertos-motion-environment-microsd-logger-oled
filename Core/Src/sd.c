@@ -29,18 +29,7 @@
 uint8_t	 sd_block_addressing = 0;
 uint8_t	 sd_initialized = 0;
 
-
-// SD write
-uint8_t  sd_write_in_progress = 0;
-uint32_t sd_write_start_time = 0;
-uint8_t  sd_write_buffer[SD_BLOCK_SIZE];
-
-// SD read
-uint32_t  sd_rx_block = 0; 			// Requested block number.
-uint8_t  sd_read_flag = 0;			// Read requested.
-uint8_t  sd_read_failed = 0;
-uint8_t  sd_read_request_in_progress = 0; // CMD17 accepted; awaiting data.
-uint32_t sd_read_start_time = 0;
+uint32_t sd_rx_block = 0; 			// Requested block number.
 uint8_t  sd_read_buffer[SD_BLOCK_SIZE];
 
 uint8_t  r1;
@@ -266,9 +255,7 @@ sd_status_t sd_get_sector_count(uint32_t *sector_count)
     if (sector_count == NULL) {
         return SD_ERROR_READ;
     }
-    if (sd_write_in_progress || sd_read_request_in_progress) {
-        return SD_BUSY;
-    }
+
 
     cs_low();
     if (sd_send_read_r1(9, 0, 0x01) != 0x00) {

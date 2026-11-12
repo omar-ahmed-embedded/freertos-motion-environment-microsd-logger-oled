@@ -35,14 +35,9 @@
 /* Variables ---------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
 
-extern volatile uint8_t i2c_sample_flag;
-extern volatile uint8_t i2c_frame_ready ;
-
 extern uint8_t i2c_mpu6050_rx_buffer[MPU_I2C_RX_FRAME_SIZE];
-//extern uint8_t mpu_log_buffer[LOG_BUFFER_SIZE];
 
 extern int i2c_sample_count;
-extern uint16_t indx;
 extern volatile uint32_t i2c_overrun_count;
 extern uint8_t start_timer;
 

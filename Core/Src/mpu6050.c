@@ -20,9 +20,6 @@
 /* Variables ---------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
 
-volatile uint8_t i2c_sample_flag = 0;
-volatile uint8_t i2c_frame_ready  = 0;
-
 uint8_t i2c_mpu6050_rx_buffer[MPU_I2C_RX_FRAME_SIZE];
 
 
@@ -195,8 +192,7 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
-        i2c_sample_flag = 0;
-        i2c_frame_ready = 0;
+			// Error handler
     }
 
 
