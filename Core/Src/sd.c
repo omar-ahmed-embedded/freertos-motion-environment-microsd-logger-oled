@@ -332,6 +332,9 @@ sd_status_t sd_read_sector(uint32_t block)
 
     cs_low();
 
+    uint32_t address = sd_block_addressing
+                     ? block
+                     : block * SD_BLOCK_SIZE;
     /* CMD17: request one sector. */
     uint8_t response = sd_send_read_r1(17, address, 0x01);
 
@@ -460,7 +463,7 @@ void sd_sensor_log_task(void *arg){
 
 
 	for(;;){
-
+		shell_printf("queue receive", (int)result);
 		xQueueReceive(sd_log_queue_handle, &log, portMAX_DELAY);
 
         /* Log MPU6050*/
@@ -529,6 +532,8 @@ void sd_sensor_log_task(void *arg){
 		    }
 
 		    result = f_close(&bme_file);
+
+		    xSemaphoreGive(i2c_mutex_handle);
 
 		    if (result != FR_OK) {
 		        shell_printf("BME close failed: %d\r\n", (int)result);

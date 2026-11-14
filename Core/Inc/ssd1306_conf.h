@@ -31,8 +31,8 @@
 #define SSD1306_CS_Pin          OLED_CS_Pin
 #define SSD1306_DC_Port         OLED_DC_GPIO_Port
 #define SSD1306_DC_Pin          OLED_DC_Pin
-#define SSD1306_Reset_Port      OLED_RES_GPIO_Port
-#define SSD1306_Reset_Pin       OLED_RES_Pin
+#define SSD1306_Reset_Port      OLED_Res_GPIO_Port
+#define SSD1306_Reset_Pin       OLED_Res_Pin
 
 // Mirror the screen if needed
 // #define SSD1306_MIRROR_VERT

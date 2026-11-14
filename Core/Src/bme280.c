@@ -260,6 +260,7 @@ void bme280_sample_task(void *arg){
         }
 
 		/* Sample every 250ms */
+
 		 vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(250));
 	}
 

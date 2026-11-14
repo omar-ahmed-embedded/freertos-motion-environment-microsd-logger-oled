@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>  // For memcpy
+uint8_t test = 0;
 
 #if defined(SSD1306_USE_I2C)
 
@@ -169,6 +170,8 @@ void ssd1306_Init(void) {
     SSD1306.CurrentY = 0;
     
     SSD1306.Initialized = 1;
+    test = SSD1306.Initialized?1:0;
+
 }
 
 /* Fill the whole screen with the given color */

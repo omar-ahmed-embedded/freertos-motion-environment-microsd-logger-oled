@@ -121,8 +121,10 @@ void convert_display_live_sensor(void){
 */
 void mpu6050_sample_task(void *arg){
 
-	sensor_sd_log_t mpu_sensor_sd_log;
-	mpu_sensor_sd_log.sensor_type = SENSOR_MPU6050;
+	sensor_sd_log_t mpu_sensor_sd_log = {
+		    .sensor_type = SENSOR_MPU6050
+		};
+
 	uint16_t indx = 0;
 	for(;;){
 
@@ -138,7 +140,7 @@ void mpu6050_sample_task(void *arg){
 
 		xSemaphoreGive(i2c_mutex_handle);
 
-		convert_display_live_sensor();
+		//convert_display_live_sensor();
 		  /* Save received frame bytes in buffer */
 
 		if(indx <= MPU_LOG_DATA_SIZE-MPU_I2C_RX_FRAME_SIZE){
@@ -150,11 +152,11 @@ void mpu6050_sample_task(void *arg){
 			for (uint16_t i = MPU_LOG_DATA_SIZE; i < LOG_BUFFER_SIZE; i++){			// Full bytes 504..512 with 0xFF
 				mpu_sensor_sd_log.buffer[i] = 0xFF;
 			}
-			shell_printf("\r\nSensor log data ready.\r\n");
+			shell_printf("\r\nMPU6050 log data ready.\r\n");
 
 
 
-			/* Queue a copy of the completed log buffer. */
+			/* Queue a copy of the completed log buffer.*/
 			if (xQueueSend(sd_log_queue_handle,  &mpu_sensor_sd_log,
 			        pdMS_TO_TICKS(250)) == pdPASS){
 			    indx = 0;

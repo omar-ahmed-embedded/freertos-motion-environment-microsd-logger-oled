@@ -19,6 +19,7 @@
 #include "mpu6050.h"
 #include "sd.h"
 #include "stm32f4xx_ll_usart.h"
+#include "oled.h"
 
 #include <string.h>		// Byte and string manipulation
 #include <stdio.h>		// Declares vsnprintf, used in shell_printf
@@ -149,6 +150,7 @@ void shell_execute(char *msg){
 	else{
 		shell_printf("Error: unknown command!\r\n\r\n");
 	}
+	shell_printf("OLED Intialized: %d!", test);
 }
 
 
@@ -320,6 +322,7 @@ void shell_read_task(void *arg)
 
 		shell_poll();		// poll for msg and send a response
 	}
+
 }
 
 /**

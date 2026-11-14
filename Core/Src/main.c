@@ -24,7 +24,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "freertos-app.h"
-#include  "mpu6050.h"
+#include "mpu6050.h"
+#include "oled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -120,6 +121,9 @@ int main(void)
   MX_USART2_UART_Init();
   MX_FATFS_Init();
   MX_SPI2_Init();
+  ssd1306_Init();
+  ssd1306_TestDrawBitmap();
+
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
 
@@ -167,9 +171,8 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  vTaskStartScheduler();
 
-  /* We should never get here as control is now taken by the scheduler */
+  vTaskStartScheduler();
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -322,7 +325,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -456,7 +459,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, OLED_DC_Pin|OLED_RES_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, OLED_DC_Pin|OLED_Res_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OLED_CS_GPIO_Port, OLED_CS_Pin, GPIO_PIN_RESET);
@@ -469,7 +472,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SD_CS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : OLED_DC_Pin OLED_RES_Pin */
-  GPIO_InitStruct.Pin = OLED_DC_Pin|OLED_RES_Pin;
+  GPIO_InitStruct.Pin = OLED_DC_Pin|OLED_Res_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

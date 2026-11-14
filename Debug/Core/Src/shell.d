@@ -45,7 +45,10 @@ Core/Src/shell.o: ../Core/Src/shell.c ../Core/Inc/freertos-app.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/mpu6050.h ../Core/Inc/shell.h ../Core/Inc/sd.h \
  ../Core/Inc/sd.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usart.h
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usart.h \
+ ../Core/Inc/oled.h ../Core/Inc/ssd1306.h ../Core/Inc/ssd1306_conf.h \
+ ../Core/Inc/main.h ../Core/Inc/ssd1306_fonts.h \
+ ../Core/Inc/ssd1306_tests.h
 ../Core/Inc/freertos-app.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
@@ -97,3 +100,9 @@ Core/Src/shell.o: ../Core/Src/shell.c ../Core/Inc/freertos-app.h \
 ../Core/Inc/sd.h:
 ../Core/Inc/sd.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usart.h:
+../Core/Inc/oled.h:
+../Core/Inc/ssd1306.h:
+../Core/Inc/ssd1306_conf.h:
+../Core/Inc/main.h:
+../Core/Inc/ssd1306_fonts.h:
+../Core/Inc/ssd1306_tests.h:

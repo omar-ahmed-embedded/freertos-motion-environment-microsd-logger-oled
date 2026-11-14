@@ -83,7 +83,7 @@ void FreeRTOS_Init(void){
 			"shell_read_task",
 			512,
 			NULL,
-			3,
+			2,
 			&shell_read_task_handle);
 
 	xTaskCreate(
@@ -91,7 +91,7 @@ void FreeRTOS_Init(void){
 			"shell_print_task",
 			512,
 			NULL,
-			3,
+			2,
 			&shell_print_task_handle);
 
 	xTaskCreate(
@@ -110,12 +110,12 @@ void FreeRTOS_Init(void){
 			1,
 			&bme280_sample_task_handle);
 
-	xTaskCreate(
+	BaseType_t created = xTaskCreate(
 			sd_sensor_log_task,
 			"sd_sensor_log_task",
 			512,
 			NULL,
-			2,
+			3,
 			&sd_sensor_log_task_handle);
 
 
