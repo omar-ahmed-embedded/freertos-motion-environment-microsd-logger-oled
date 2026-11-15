@@ -32,6 +32,8 @@ extern uint8_t	sd_block_addressing;
 extern uint32_t sd_rx_block;
 
 extern uint8_t  sd_read_buffer[SD_BLOCK_SIZE];
+extern uint8_t display_live_bme;
+extern uint8_t display_live_mpu;
 
 typedef enum {
 	SD_OK = 0,
@@ -69,6 +71,8 @@ sd_status_t sd_get_sector_count(uint32_t *sector_count);
 
 sd_status_t clear_sd();
 void sd_sensor_log_task(void *arg);
+void sd_file_read_task(void *arg);
+
 char *error_str(sd_status_t res);
 
 #endif

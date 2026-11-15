@@ -11,4 +11,5 @@
 ../Core/Src/sd.c:322:13:sd_read_sector	48	static
 ../Core/Src/sd.c:382:9:sd_read_file	96	static
 ../Core/Src/sd.c:448:6:sd_sensor_log_task	536	static
-../Core/Src/sd.c:558:7:error_str	16	static
+../Core/Src/sd.c:563:6:sd_file_read_task	32	static
+../Core/Src/sd.c:653:7:error_str	16	static

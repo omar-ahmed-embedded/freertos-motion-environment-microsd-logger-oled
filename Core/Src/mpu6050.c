@@ -129,12 +129,14 @@ void mpu6050_sample_task(void *arg){
 	for(;;){
 
 		xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
-
+				// Shared with sd read and write to prevent sd operation from
+																	//interrupting a running i2c operation
 		// Sensor by defualt updates its registers with 8kHz (DLPF_CFG = 0)
 		if (HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
 					I2C_MEMADD_SIZE_8BIT, i2c_mpu6050_rx_buffer, MPU_I2C_RX_FRAME_SIZE,100) != HAL_OK){
 			shell_printf("MPU6050 read error!\r\n");
 		    vTaskDelay(pdMS_TO_TICKS(250));
+		    xSemaphoreGive(i2c_mutex_handle);
 		    continue;
 		}
 
@@ -175,13 +177,12 @@ void mpu6050_sample_task(void *arg){
 
 
 /**
-* @brief I2C DMA receive interrupt call back
+* @brief I2C  receive interrupt call back
 * @retval None
 */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
-		// Do nothing
 
 	}
 }

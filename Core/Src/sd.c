@@ -153,7 +153,7 @@ sd_status_t sd_init(void){
 	 // Now, it is safe to speed up.
 	  __HAL_SPI_DISABLE(&hspi1);
 	  hspi1.Instance->CR1 = (hspi1.Instance->CR1 & ~SPI_CR1_BR_Msk)
-	                         | SPI_BAUDRATEPRESCALER_8;     /* 84/8 = 10.5 MHz */
+	                         | SPI_BAUDRATEPRESCALER_256;     /* 84/8 = 10.5 MHz */
 	  __HAL_SPI_ENABLE(&hspi1);
 
 	 sd_initialized = 1;
@@ -452,18 +452,22 @@ void sd_sensor_log_task(void *arg){
 	FRESULT result;
 	UINT bytes_written;
 
-	/* Makes the card’s filesystem available to FatFs.*/
-	result = f_mount(&USERFatFS, USERPath, 1);
+	do {
+	    result = f_mount(&USERFatFS, USERPath, 1);
 
-	 if (result != FR_OK) {
-	        shell_printf("SD mount failed: %d\r\n", (int)result);
-	        vTaskDelete(NULL);
-	        return;
-	 }
+	    if (result != FR_OK) {
+	        shell_printf("SD mount failed: %d. Retrying in 1 second...\r\n",
+	                     (int)result);
+
+	        vTaskDelay(pdMS_TO_TICKS(1000));
+	    }
+	} while (result != FR_OK);
+
+	shell_printf("SD mounted successfully.\r\n");
 
 
 	for(;;){
-		shell_printf("queue receive", (int)result);
+
 		xQueueReceive(sd_log_queue_handle, &log, portMAX_DELAY);
 
         /* Log MPU6050*/
@@ -500,19 +504,21 @@ void sd_sensor_log_task(void *arg){
 			shell_printf("MPU data saved.\r\n");
 
 			result = f_close(&mpu_file); // Also flushes the metadata
-
+			xSemaphoreGive(sd_mutex_handle);
 			if (result != FR_OK) {
 				shell_printf("File close failed: %d\r\n", (int)result);
 			}
 		}
 		/* Log BME280*/
 		else if (log.sensor_type == SENSOR_BME280){
+			xSemaphoreTake(sd_mutex_handle, portMAX_DELAY);
 		    static FIL bme_file;
 
 		    result = f_open(&bme_file, "0:/BME280.BIN", FA_WRITE | FA_OPEN_APPEND);
 
 		    if (result != FR_OK) {
 		        shell_printf("BME file open failed: %d\r\n", (int)result);
+		        xSemaphoreGive(sd_mutex_handle);
 		        continue;
 		    }
 
@@ -527,13 +533,13 @@ void sd_sensor_log_task(void *arg){
 		        if (close_result != FR_OK) {
 		            shell_printf("BME close failed: %d\r\n", (int)close_result);
 		        }
-
+		        xSemaphoreGive(sd_mutex_handle);
 		        continue;
 		    }
 
 		    result = f_close(&bme_file);
 
-		    xSemaphoreGive(i2c_mutex_handle);
+		    xSemaphoreGive(sd_mutex_handle);
 
 		    if (result != FR_OK) {
 		        shell_printf("BME close failed: %d\r\n", (int)result);
@@ -550,6 +556,95 @@ void sd_sensor_log_task(void *arg){
 
 
 
+/**
+  * @brief sd file read task
+  * @retval
+  */
+void sd_file_read_task(void *arg){
+
+	 sensor_type_t sensor_type;
+	 const TCHAR *filename;
+
+	 static FIL file;
+	 static uint8_t buffer[SD_BLOCK_SIZE];
+
+	 FRESULT result;
+	 FRESULT close_result;
+	 UINT bytes_read;
+
+	 for (;;) {
+
+		 /* Wait for a file-read request from the shell. */
+		 if (xQueueReceive(sd_read_queue_handle, &sensor_type,
+						   portMAX_DELAY) != pdPASS) {
+
+			 continue;
+		 }
+		 switch (sensor_type) {
+			 case SENSOR_MPU6050:
+				 filename = "0:/MPU6050.BIN";
+				 break;
+
+			 case SENSOR_BME280:
+				 filename = "0:/BME280.BIN";
+				 break;
+
+			 default:
+				 shell_printf("Unknown sensor type.\r\n");
+				 continue;
+			 }
+		 /* Prevent logging from accessing the card during this read. */
+		 xSemaphoreTake(sd_mutex_handle, portMAX_DELAY);
+
+		 /* Open the selected file and assign its actual result. */
+		 result = f_open(&file, filename, FA_READ);
+
+		 shell_printf("\r\nReading %s: %lu bytes\r\n",
+		              filename, (unsigned long)f_size(&file));
+		 if (result != FR_OK) {
+			xSemaphoreGive(sd_mutex_handle);
+			shell_printf("File open failed: %d\r\n", (int)result);
+			continue;
+		 }
+
+		 shell_printf("\r\nReading %s: %lu bytes\r\n", filename, (unsigned long)f_size(&file));
+
+		 for (;;) {
+			result = f_read(&file, buffer, sizeof(buffer), &bytes_read);
+
+			if (result != FR_OK || bytes_read == 0) {
+				break;
+			}
+
+			//ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			/* Print each received byte once, 16 bytes per line. */
+			for (UINT i = 0; i < bytes_read; i++) {
+				shell_printf("%02X ", (unsigned int)buffer[i]);
+
+				if ((i + 1U) % 16U == 0U || i + 1U == bytes_read) {
+					shell_printf("\r\n");
+				}
+			}
+		 }
+		 /* Close the file even if reading failed. */
+		 close_result = f_close(&file);
+
+		 xSemaphoreGive(sd_mutex_handle);
+
+		 if (result != FR_OK) {
+			 shell_printf("File read failed: %d\r\n", (int)result);
+		 }
+
+		 if (close_result != FR_OK) {
+			 shell_printf("File close failed: %d\r\n", (int)close_result);
+		 }
+
+		 if (result == FR_OK && close_result == FR_OK) {
+			 shell_printf("File read complete.\r\n");
+		 }
+
+	 }
+}
 /**
   * @brief Convert the sd_status error to a string
   * @retval error as a string

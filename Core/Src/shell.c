@@ -100,57 +100,67 @@ void shell_poll(void){
   * @brief  Chech content of received msg, act on it, and print a response.
   * @retval none
   */
-void shell_execute(char *msg){
+/**
+  * @brief Execute supported shell commands.
+  * @retval None
+  */
+void shell_execute(char *msg)
+{
+    if (msg == NULL || msg[0] == '\0') {
+        return;
+    }
 
-	//uint32_t block = 0;		// stroul return unsigned long, which is 32 bits on ARM32 M4
-	sd_status_t result = 0;
+    if (strcmp(msg, "help") == 0) {
+        shell_printf("\r\n");
+        shell_printf("%-28s%s\r\n", "help:", "Displays available commands");
+        shell_printf("%-28s%s\r\n", "read mpu:", "Reads the MPU6050 file from SD");
+        shell_printf("%-28s%s\r\n", "read bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "display live bme:", "Displays live BME280 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 display");
+        shell_printf("%-28s%s\r\n", "display live mpu:", "Displays live MPU6050 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 display");
+        shell_printf("\r\n");
+    }
 
-	// Check msg
-	// help
-	if(strncmp(msg, "help",4) == 0){
-		shell_printf("\r\n");
-		// Pad the string with spaces from the right to align the text
-		shell_printf("%-24s%s\r\n", "help:", "this text");
-		shell_printf("%-24s%s\r\n", "status:", "prints current SD card type and logging information");
-		shell_printf("%-24s%s\r\n", "read block <number>:", "prints decoded MPU6050 data stored in that block,");
-		shell_printf("%-24sstart block: %u\r\n", "",SD_START_BLOCK);
-		shell_printf("%-24s%s\r\n", "pause sensor logging:", "pauses logging in sd");
-		shell_printf("%-24s%s\r\n", "resume sensor logging:", "resumes logging in sd");
-		shell_printf("%-24s%s\r\n", "display live sensor:", "displayes live decoded sensor readings");
-		shell_printf("%-24s%s\r\n", "pause live sensor:", "pauses live sensor display");
-		shell_printf("%-24s%s\r\n", "clear sd:", "clears logged data in sd and resets logging buffers");
+    else if (strcmp(msg, "read mpu") == 0 ||
+             strcmp(msg, "read bme") == 0) {
 
-	}	// Print a specefic block
+        sensor_type_t sensor_type =
+            (strcmp(msg, "read mpu") == 0)
+            ? SENSOR_MPU6050
+            : SENSOR_BME280;
 
-	else if (strncmp(msg, "clear sd", 8) == 0){
+        if (xQueueSend(sd_read_queue_handle, &sensor_type,
+                       pdMS_TO_TICKS(250)) == pdPASS) {
+            shell_printf("File-read request queued.\r\n");
+        } else {
+            shell_printf("File-read queue full. Try again later.\r\n");
+        }
+    }
 
-		shell_printf("\r\nClearing sd...\r\n");
-		if (result == SD_OK){ shell_printf("SD cleared and logging buffers reset. \r\n"); }
-		else { shell_printf("Error sd_not cleared: error %s \r\n", error_str(result)); }
-	}
-	else if (strncmp(msg, "pause sensor logging", 20) == 0){
-		pause_sd_logging = 1;
-		 shell_printf("SD logging paused.\r\n");
-	}
-	else if(strncmp(msg, "resume sensor logging", 21) == 0){
-		pause_sd_logging = 0;
-		shell_printf("SD logging resumed.\r\n");
-	}
-	else if(strncmp(msg, "status", 6) == 0){
-		print_status();
-	}
-	else if (strncmp(msg, "display live sensor", 19) == 0){
-		display_live_mpu = 1;
-		shell_printf("Live sensor readings displaying...\r\n");
-	}
-	else if (strncmp(msg, "pause live sensor", 17) == 0){
-			display_live_mpu = 0;
-			shell_printf("Live sensor display paused\r\n");
-	}
-	else{
-		shell_printf("Error: unknown command!\r\n\r\n");
-	}
-	shell_printf("OLED Intialized: %d!", test);
+    else if (strcmp(msg, "display live bme") == 0) {
+        display_live_bme = 1;
+        shell_printf("BME280 live OLED display enabled.\r\n");
+    }
+
+    else if (strcmp(msg, "pause live bme") == 0) {
+        display_live_bme = 0;
+        shell_printf("BME280 live OLED display paused.\r\n");
+    }
+
+    else if (strcmp(msg, "display live mpu6050") == 0) {
+        display_live_mpu = 1;
+        shell_printf("MPU6050 live OLED display enabled.\r\n");
+    }
+
+    else if (strcmp(msg, "pause live mpu") == 0) {
+        display_live_mpu = 0;
+        shell_printf("MPU6050 live OLED display paused.\r\n");
+    }
+
+    else {
+        shell_printf("Unknown command. Type 'help' for available commands.\r\n");
+    }
 }
 
 

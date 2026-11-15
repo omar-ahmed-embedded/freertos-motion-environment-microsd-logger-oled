@@ -53,9 +53,11 @@ TaskHandle_t shell_print_task_handle;
 TaskHandle_t mpu6050_sample_task_handle;
 TaskHandle_t bme280_sample_task_handle;
 TaskHandle_t sd_sensor_log_task_handle;
+TaskHandle_t sd_file_read_task_handle;
 
 QueueHandle_t shell_print_queue_handle;
 QueueHandle_t sd_log_queue_handle;
+QueueHandle_t sd_read_queue_handle;
 
 SemaphoreHandle_t i2c_mutex_handle;
 SemaphoreHandle_t sd_mutex_handle;
@@ -73,7 +75,8 @@ extern void bme280_sample_task(void *arg);
 void FreeRTOS_Init(void){
 
 	shell_print_queue_handle = xQueueCreate(4, sizeof(shell_print_msg_t));
-	sd_log_queue_handle = xQueueCreate(4, sizeof(sensor_sd_log_t));
+	sd_log_queue_handle = xQueueCreate(8, sizeof(sensor_sd_log_t));
+	sd_read_queue_handle =  xQueueCreate(2, sizeof(sensor_type_t));
 
 	i2c_mutex_handle = xSemaphoreCreateMutex();
 	sd_mutex_handle = xSemaphoreCreateMutex();
@@ -110,13 +113,21 @@ void FreeRTOS_Init(void){
 			1,
 			&bme280_sample_task_handle);
 
-	BaseType_t created = xTaskCreate(
+	xTaskCreate(
 			sd_sensor_log_task,
 			"sd_sensor_log_task",
 			512,
 			NULL,
 			3,
 			&sd_sensor_log_task_handle);
+
+	xTaskCreate(
+			sd_file_read_task,
+			"sd_file_read_task",
+			512,
+			NULL,
+			3,
+			&sd_file_read_task_handle);
 
 
 }
