@@ -184,9 +184,8 @@ void mpu6050_sample_task(void *arg){
 */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 
+	BaseType_t higher_priority_task_woken = pdFALSE;
 	if (hi2c->Instance == I2C1){
-        BaseType_t higher_priority_task_woken = pdFALSE;
-
         xSemaphoreGiveFromISR(i2c_rx_done_semaphore_handle, &higher_priority_task_woken);
         portYIELD_FROM_ISR(higher_priority_task_woken);
 
@@ -200,12 +199,9 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 */
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c){
 
+	BaseType_t higher_priority_task_woken = pdFALSE;
 	if (hi2c->Instance == I2C1){
-	    BaseType_t higher_priority_task_woken = pdFALSE;
-
-	    xSemaphoreGiveFromISR(i2c_rx_done_semaphore_handle,
-	                          &higher_priority_task_woken);
-
+	    xSemaphoreGiveFromISR(i2c_rx_done_semaphore_handle, &higher_priority_task_woken);
 	    portYIELD_FROM_ISR(higher_priority_task_woken);
     }
 

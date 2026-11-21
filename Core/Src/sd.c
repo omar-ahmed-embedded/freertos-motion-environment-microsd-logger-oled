@@ -566,11 +566,13 @@ void sd_file_read_task(void *arg){
 	 const TCHAR *filename;
 
 	 static FIL file;
-	 static uint8_t buffer[SD_FILE_SIZE];
+	 static uint8_t buffer[SD_BLOCK_SIZE];
 
 	 FRESULT result;
 	 FRESULT close_result;
 	 UINT bytes_read;
+
+	 HAL_StatusTypeDef tx_result = HAL_OK;
 
 	 for (;;) {
 
@@ -621,16 +623,30 @@ void sd_file_read_task(void *arg){
 				break;
 			}
 
-			//ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 			/* Print each received byte once, 16 bytes per line. */
-			for (UINT i = 0; i < bytes_read; i++) {
-				shell_printf("%02X ", (unsigned int)buffer[i]);
+			xSemaphoreTake(shell_print_mutex_handle, portMAX_DELAY);
 
-				if ((i + 1U) % 16U == 0U || i + 1U == bytes_read) {
-					shell_printf("\r\n");
+			/* Clear any previous completion notification. In case of stopped printing file content */
+			ulTaskNotifyTake(pdTRUE, 0);
+			tx_result = HAL_UART_Transmit_DMA(&huart2, buffer, (uint16_t)bytes_read);
+
+
+			if (tx_result == HAL_OK){
+				if (ulTaskNotifyTake(pdTRUE, 2000) == 0){  // Wait until ISR gives notification
+					HAL_StatusTypeDef abort_result = HAL_UART_AbortTransmit(&huart2);
+					tx_result = HAL_TIMEOUT;
+
+
 				}
 			}
+
+			xSemaphoreGive(shell_print_mutex_handle);
+			if (tx_result != HAL_OK) {
+				shell_printf("UART TX failed: %d\r\n", (int)tx_result);
+			    break;
+			}
 		 }
+
 		 /* Close the file even if reading failed. */
 		 close_result = f_close(&file);
 

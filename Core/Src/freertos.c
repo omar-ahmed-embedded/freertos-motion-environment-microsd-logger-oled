@@ -62,6 +62,8 @@ QueueHandle_t sd_read_queue_handle;
 SemaphoreHandle_t i2c_mutex_handle;
 SemaphoreHandle_t sd_mutex_handle;
 SemaphoreHandle_t i2c_rx_done_semaphore_handle;
+SemaphoreHandle_t shell_print_mutex_handle;
+
 
 
 /* USER CODE END Variables */
@@ -79,9 +81,12 @@ void FreeRTOS_Init(void){
 	sd_log_queue_handle = xQueueCreate(8, sizeof(sensor_sd_log_t));
 	sd_read_queue_handle =  xQueueCreate(2, sizeof(sensor_type_t));
 
-	i2c_mutex_handle = xSemaphoreCreateMutex();
-	sd_mutex_handle = xSemaphoreCreateMutex();
-	i2c_rx_done_semaphore_handle = xSemaphoreCreateBinary();
+
+	i2c_mutex_handle = xSemaphoreCreateMutex(); // Shared between the two sensors sampling
+	sd_mutex_handle = xSemaphoreCreateMutex();	// Shared between the sd write and read tasks
+	i2c_rx_done_semaphore_handle = xSemaphoreCreateBinary();	// Prevents sampling to be preemted before finishing along with th ISR
+	shell_print_mutex_handle = xSemaphoreCreateMutex();		// Shared between the shell_printf and the file print using DMA
+
 
 	xTaskCreate(
 			shell_read_task,

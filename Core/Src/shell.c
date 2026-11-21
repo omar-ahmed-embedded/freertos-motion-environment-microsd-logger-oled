@@ -34,7 +34,7 @@ uint8_t rx_head = 0;
 uint8_t rx_tail = 0;
 char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
-uint8_t pause_sd_logging = 0;
+
 
 
 /* Code ---------------------------------------------------------*/
@@ -57,10 +57,28 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size){  //si
 	BaseType_t higher_priority_task_woken = pdFALSE;
 
 	if(huart->Instance == USART2){
+		/* Notify shell read task*/
 		vTaskNotifyGiveFromISR(shell_read_task_handle, &higher_priority_task_woken);
 		portYIELD_FROM_ISR(higher_priority_task_woken);
 	}
 }
+
+/**
+  * @brief  UART transmit complete interrupt call back function.
+  * @retval none
+  */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2) {
+        BaseType_t higher_priority_task_woken = pdFALSE;
+
+        vTaskNotifyGiveFromISR(sd_file_read_task_handle,
+                              &higher_priority_task_woken);
+
+        portYIELD_FROM_ISR(higher_priority_task_woken);
+    }
+}
+
 
 /**
   * @brief  Pol what is received in rx_buffer and hand it to shell_execute.
@@ -119,6 +137,7 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 display");
         shell_printf("%-28s%s\r\n", "display live mpu:", "Displays live MPU6050 readings on the OLED");
         shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 display");
+
         shell_printf("\r\n");
     }
 
@@ -148,7 +167,7 @@ void shell_execute(char *msg)
         shell_printf("BME280 live OLED display paused.\r\n");
     }
 
-    else if (strcmp(msg, "display live mpu6050") == 0) {
+    else if (strcmp(msg, "display live mpu") == 0) {
         display_live_mpu = 1;
         shell_printf("MPU6050 live OLED display enabled.\r\n");
     }
@@ -228,7 +247,7 @@ void shell_printf(const char *str, ...){
 
        print_msg_send.len = len;
        // Queue struct
-       xQueueSend(shell_print_queue_handle, & print_msg_send, pdMS_TO_TICKS(250));
+       xQueueSend(shell_print_queue_handle, &print_msg_send, pdMS_TO_TICKS(250));
     }
 
 }
@@ -337,6 +356,7 @@ void shell_read_task(void *arg)
 
 /**
 * @brief Shell task function
+*
 * @retval None
 */
 
@@ -349,8 +369,9 @@ void shell_print_task(void *arg)
 	{
 		  // Wait until shell_printf gives notification
 		xQueueReceive(shell_print_queue_handle, &print_msg_receive, portMAX_DELAY);
-
+		xSemaphoreTake(shell_print_mutex_handle, portMAX_DELAY);
 		HAL_UART_Transmit(&huart2,(uint8_t *)print_msg_receive.data, print_msg_receive.len,100);
+		xSemaphoreGive(shell_print_mutex_handle);
 	}
 }
 
