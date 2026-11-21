@@ -28,6 +28,7 @@ extern QueueHandle_t sd_read_queue_handle;
 
 extern SemaphoreHandle_t i2c_mutex_handle;
 extern SemaphoreHandle_t sd_mutex_handle;
+extern SemaphoreHandle_t i2c_rx_done_semaphore_handle;
 
 /* Functions ---------------------------------------------------------*/
 void FreeRTOS_Init(void);

@@ -49,7 +49,7 @@ void UART_Recieve_Start(void){
 }
 
 /**
-  * @brief  UART nterrupt call back function
+  * @brief  UART nterrupt call back function. Notify shell read task.
   * @retval none
   */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size){  //size represents number of bytes received when the callback is called

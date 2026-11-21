@@ -132,19 +132,21 @@ void mpu6050_sample_task(void *arg){
 				// Shared with sd read and write to prevent sd operation from
 																	//interrupting a running i2c operation
 		// Sensor by defualt updates its registers with 8kHz (DLPF_CFG = 0)
-		if (HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
-					I2C_MEMADD_SIZE_8BIT, i2c_mpu6050_rx_buffer, MPU_I2C_RX_FRAME_SIZE,100) != HAL_OK){
+		if (HAL_I2C_Mem_Read_IT(&hi2c1, MPU6050_ADDR << 1, MPU6050_DATA_START_REG,
+					I2C_MEMADD_SIZE_8BIT, i2c_mpu6050_rx_buffer, MPU_I2C_RX_FRAME_SIZE) != HAL_OK){
+			xSemaphoreGive(i2c_mutex_handle);
 			shell_printf("MPU6050 read error!\r\n");
 		    vTaskDelay(pdMS_TO_TICKS(250));
-		    xSemaphoreGive(i2c_mutex_handle);
+
 		    continue;
 		}
 
+		xSemaphoreTake(i2c_rx_done_semaphore_handle, portMAX_DELAY);
 		xSemaphoreGive(i2c_mutex_handle);
 
 		//convert_display_live_sensor();
-		  /* Save received frame bytes in buffer */
 
+		/* Save received frame bytes in buffer */
 		if(indx <= MPU_LOG_DATA_SIZE-MPU_I2C_RX_FRAME_SIZE){
 			for (uint8_t i = 0; i < MPU_I2C_RX_FRAME_SIZE; i++){
 				mpu_sensor_sd_log.buffer[indx++] = i2c_mpu6050_rx_buffer[i];			// Add 14 received to log buffer
@@ -177,12 +179,16 @@ void mpu6050_sample_task(void *arg){
 
 
 /**
-* @brief I2C  receive interrupt call back
+* @brief I2C receive interrupt call back. Give sample received semaphore
 * @retval None
 */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
+        BaseType_t higher_priority_task_woken = pdFALSE;
+
+        xSemaphoreGiveFromISR(i2c_rx_done_semaphore_handle, &higher_priority_task_woken);
+        portYIELD_FROM_ISR(higher_priority_task_woken);
 
 	}
 }
@@ -195,7 +201,12 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c){
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c){
 
 	if (hi2c->Instance == I2C1){
-			// Error handler
+	    BaseType_t higher_priority_task_woken = pdFALSE;
+
+	    xSemaphoreGiveFromISR(i2c_rx_done_semaphore_handle,
+	                          &higher_priority_task_woken);
+
+	    portYIELD_FROM_ISR(higher_priority_task_woken);
     }
 
 

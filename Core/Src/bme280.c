@@ -65,16 +65,20 @@ static BME280_INTF_RET_TYPE platform_read(uint8_t reg, uint8_t *data, uint32_t l
 {
     uint8_t address = *(uint8_t *)context;
 
-    HAL_StatusTypeDef result = HAL_I2C_Mem_Read(
+    HAL_StatusTypeDef result = HAL_I2C_Mem_Read_IT(
         &hi2c1,
         address << 1,
         reg,
         I2C_MEMADD_SIZE_8BIT,
         data,
-        (uint16_t)length,
-        100
+        (uint16_t)length
     );
 
+    if (result != HAL_OK) {
+        return -1;
+    }
+
+    xSemaphoreTake(i2c_rx_done_semaphore_handle, portMAX_DELAY);
     return (result == HAL_OK) ? 0 : -1;
 }
 
@@ -178,6 +182,7 @@ void bme280_sample_task(void *arg){
 		);
 	}
 
+
 	xSemaphoreGive(i2c_mutex_handle);
 
 	 if (result != BME280_OK) {
@@ -197,6 +202,7 @@ void bme280_sample_task(void *arg){
 	 TickType_t last_wake = xTaskGetTickCount();
 
 	 for (;;) {
+
 		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 
 		 result = bme280_set_sensor_mode( BME280_POWERMODE_FORCED, &sensor);
@@ -208,6 +214,7 @@ void bme280_sample_task(void *arg){
 
 			 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 			 result = bme280_get_sensor_data(BME280_ALL, &bme280_reading, &sensor);			// Read sensor and store in buffer
+			 		// Wait until I2C sample is done
 			 xSemaphoreGive(i2c_mutex_handle);
 
 			 /* Fille log buffer and queue for sd log*/

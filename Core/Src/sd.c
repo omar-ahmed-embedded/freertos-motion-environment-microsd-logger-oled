@@ -566,7 +566,7 @@ void sd_file_read_task(void *arg){
 	 const TCHAR *filename;
 
 	 static FIL file;
-	 static uint8_t buffer[SD_BLOCK_SIZE];
+	 static uint8_t buffer[SD_FILE_SIZE];
 
 	 FRESULT result;
 	 FRESULT close_result;
@@ -577,9 +577,13 @@ void sd_file_read_task(void *arg){
 		 /* Wait for a file-read request from the shell. */
 		 if (xQueueReceive(sd_read_queue_handle, &sensor_type,
 						   portMAX_DELAY) != pdPASS) {
-
 			 continue;
 		 }
+
+		 /*Sensor task wakes and releases I2C mutex */
+		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+		 xSemaphoreGive(i2c_mutex_handle);
+
 		 switch (sensor_type) {
 			 case SENSOR_MPU6050:
 				 filename = "0:/MPU6050.BIN";
@@ -608,6 +612,7 @@ void sd_file_read_task(void *arg){
 		 }
 
 		 shell_printf("\r\nReading %s: %lu bytes\r\n", filename, (unsigned long)f_size(&file));
+
 
 		 for (;;) {
 			result = f_read(&file, buffer, sizeof(buffer), &bytes_read);

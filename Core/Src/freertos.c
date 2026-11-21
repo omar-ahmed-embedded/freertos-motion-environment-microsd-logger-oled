@@ -61,6 +61,7 @@ QueueHandle_t sd_read_queue_handle;
 
 SemaphoreHandle_t i2c_mutex_handle;
 SemaphoreHandle_t sd_mutex_handle;
+SemaphoreHandle_t i2c_rx_done_semaphore_handle;
 
 
 /* USER CODE END Variables */
@@ -80,6 +81,7 @@ void FreeRTOS_Init(void){
 
 	i2c_mutex_handle = xSemaphoreCreateMutex();
 	sd_mutex_handle = xSemaphoreCreateMutex();
+	i2c_rx_done_semaphore_handle = xSemaphoreCreateBinary();
 
 	xTaskCreate(
 			shell_read_task,
