@@ -34,7 +34,6 @@ uint8_t rx_head = 0;
 uint8_t rx_tail = 0;
 char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
-uint8_t pause_sd_logging = 0;
 uint8_t abort_file_read = 0;
 
 uint8_t pause_mpu_sampling = 0;
@@ -141,11 +140,13 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "pause bme:", "Reads the BME280 file from SD");
         shell_printf("%-28s%s\r\n", "resume mpu:", "Reads the MPU6050 file from SD");
         shell_printf("%-28s%s\r\n", "resume bme:", "Reads the BME280 file from SD");
-        shell_printf("%-28s%s\r\n", "display live bme:", "Displays live BME280 readings on the OLED");
-        shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 display");
-        shell_printf("%-28s%s\r\n", "display live mpu:", "Displays live MPU6050 readings on the OLED");
-        shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 display");
+        shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "resume live bme:", "Resumes live BME280 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "resume live mpu:", "Resumes live MPU6050 readings on the OLED");
         shell_printf("%-28s%s\r\n", "abort read:", "Aborts file read from SD");
+        shell_printf("%-28s%s\r\n", "pause logging:", "Pauses file logging for both sensors");
+        shell_printf("%-28s%s\r\n", "resume logging:", "Resumes file logging for both sensors");
         shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
         shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
         shell_printf("\r\n");
@@ -186,7 +187,7 @@ void shell_execute(char *msg)
 	else if (strcmp(msg, "resume bme") == 0) {
 		pause_bme_sampling = 0;
 		xTaskNotifyGive(bme280_sample_task_handle);
-		shell_printf("BME280 sampling resumed.\r\n");
+		shell_printf("\r\nBME280 sampling resumed.\r\n");
 	}
 
 	else if (strcmp(msg, "clear mpu") == 0) {
@@ -198,22 +199,33 @@ void shell_execute(char *msg)
 
     else if (strcmp(msg, "pause live bme") == 0) {
         pause_live_bme = 1;
-        shell_printf("BME280 live OLED display paused.\r\n");
+        shell_printf("\r\nBME280 live OLED display paused.\r\n");
     }
 
     else if (strcmp(msg, "resume live bme") == 0) {
     	pause_live_bme = 0;
-        shell_printf("BME280 live OLED display resumed.\r\n");
+        shell_printf("\r\nBME280 live OLED display resumed.\r\n");
     }
 
     else if (strcmp(msg, "pause live mpu") == 0) {
     	pause_live_mpu = 1;
-        shell_printf("MPU6050 live OLED display paused.\r\n");
+        shell_printf("\r\nMPU6050 live OLED display paused.\r\n");
     }
 
     else if (strcmp(msg, "resume live mpu") == 0) {
     	pause_live_mpu = 0;
-        shell_printf("MPU6050 live OLED display resumed.\r\n");
+        shell_printf("\r\nMPU6050 live OLED display resumed.\r\n");
+    }
+
+    else if (strcmp(msg, "pause logging") == 0) {
+        pause_sd_logging = 1;
+        shell_printf("\r\nSD logging paused for both sensors.\r\n");
+    }
+
+    else if (strcmp(msg, "resume logging") == 0) {
+        pause_sd_logging = 0;
+
+        shell_printf("\r\nSD logging resumed for both sensors.\r\n");
     }
 
     else if (strcmp(msg, "abort read") == 0) {

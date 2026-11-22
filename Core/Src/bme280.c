@@ -43,7 +43,7 @@
 #include "freertos-app.h"
 #include "main.h"
 #include "shell.h"
-#include "sd.h"
+#include  "sd.h"
 #include "oled.h"
 
 #include <stdio.h>
@@ -238,11 +238,11 @@ void bme280_sample_task(void *arg){
 
         }
 		else {
-			shell_printf("BME trigger failed: %d\r\n", (int)result);
+			shell_printf("\r\nBME trigger failed: %d\r\n", (int)result);
         }
 
 		if (pause_bme_sampling){
-			shell_printf("BME280 sampling paused.\r\n");
+			shell_printf("\r\nBME280 sampling paused.\r\n");
 			vTaskSuspend(NULL);
 
 		}
@@ -275,37 +275,41 @@ void decode_display_live_bme(void){
         shell_printf("BME text formatting failed.\r\n");
         return;
     }
+    /* Queue each sample to be displayed on the oled. */
+    if (!pause_live_bme) {
+		oled_sensor_msg_t oled_message = {
+			.sensor_type = SENSOR_BME280,
+
+			.temperature_c = (float)bme280_reading.temperature,
+			.pressure_pa = (float)bme280_reading.pressure,
+			.humidity_rh = (float)bme280_reading.humidity
+		};
+
+		/* Skip this display update if the OLED queue is full. */
+		xQueueSend(oled_queue_handle, &oled_message, 0);
+	}
+
 
     /* Queue the existing batch if the next reading will not fit. */
-    if (bme_log_indx + (uint16_t)len >
-        sizeof(bme280_sensor_sd_log.buffer)) {
+    if (bme_log_indx + (uint16_t)len > sizeof(bme280_sensor_sd_log.buffer)) {
 
         bme280_sensor_sd_log.length = bme_log_indx;
-
-        if (xQueueSend(sd_log_queue_handle, &bme280_sensor_sd_log,
-                       pdMS_TO_TICKS(250)) == pdPASS) {
-        	bme_log_indx = 0;
-			shell_printf("BME280 log data ready.\r\n");
-
-			if (!pause_live_bme) {
-				oled_sensor_msg_t oled_message = {
-					.sensor_type = SENSOR_BME280,
-
-					.temperature_c = (float)bme280_reading.temperature,
-					.pressure_pa = (float)bme280_reading.pressure,
-					.humidity_rh = (float)bme280_reading.humidity
-				};
-
-				/* Skip this display update if the OLED queue is full. */
-				xQueueSend(oled_queue_handle, &oled_message, 0);
+        if (!pause_sd_logging){
+			if (xQueueSend(sd_log_queue_handle, &bme280_sensor_sd_log,
+						   pdMS_TO_TICKS(250)) == pdPASS) {
+				bme_log_indx = 0;
+				shell_printf("BME280 log data ready.\r\n");
+			}
+			else {
+				 shell_printf("SD queue full; BME batch retained, new reading skipped.\r\n");
+				 return;
 			}
         }
-        else {
-        	 shell_printf("SD queue full; BME batch retained, new reading skipped.\r\n");
-        	 return;
+        else{
+			bme_log_indx = 0;
+			bme280_sensor_sd_log.length = 0;
+			return;
         }
-
-
     }
 
     /* Append the formatted characters, excluding the terminating '\0'. */
@@ -313,9 +317,6 @@ void decode_display_live_bme(void){
            text, (size_t)len);
 
     bme_log_indx += (uint16_t)len;
-
-    /* Live UART output. */
-    // shell_printf("%s", text);
 }
 
 /*!

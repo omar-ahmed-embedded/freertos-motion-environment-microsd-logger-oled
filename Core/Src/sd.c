@@ -31,7 +31,7 @@ uint8_t	 sd_initialized = 0;
 
 uint32_t sd_rx_block = 0; 			// Requested block number.
 uint8_t  sd_read_buffer[SD_BLOCK_SIZE];
-
+uint8_t  pause_sd_logging = 0;
 uint8_t  r1;
 uint8_t  resp;
 uint32_t address;
@@ -501,7 +501,7 @@ void sd_sensor_log_task(void *arg){
 			    continue;
 			}
 
-			shell_printf("MPU data saved.\r\n");
+			shell_printf("\r\nMPU data saved.\r\n");
 
 			result = f_close(&mpu_file); // Also flushes the metadata
 			xSemaphoreGive(sd_mutex_handle);
@@ -522,9 +522,9 @@ void sd_sensor_log_task(void *arg){
 		        continue;
 		    }
 
-		    result = f_write(&bme_file, log.buffer, SD_BLOCK_SIZE, &bytes_written);
+		    result = f_write(&bme_file, log.buffer, log.length, &bytes_written);
 
-		    if (result != FR_OK || bytes_written != SD_BLOCK_SIZE) {
+		    if (result != FR_OK || bytes_written != log.length) {
 		        shell_printf("BME write failed: result=%d, bytes=%u\r\n",
 		                     (int)result, (unsigned int)bytes_written);
 
@@ -546,7 +546,7 @@ void sd_sensor_log_task(void *arg){
 		        continue;
 		    }
 
-		    shell_printf("BME data saved.\r\n");
+		    shell_printf("\r\nBME data saved.\r\n");
 		}
 		else{
 			shell_printf("Unkown sensor type!\r\n");
