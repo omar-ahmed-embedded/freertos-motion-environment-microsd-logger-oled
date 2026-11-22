@@ -36,6 +36,7 @@ char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
 uint8_t pause_sd_logging = 0;
 uint8_t abort_file_read = 0;
+
 uint8_t pause_mpu_sampling = 0;
 uint8_t pause_bme_sampling = 0;
 
@@ -195,24 +196,24 @@ void shell_execute(char *msg)
 	    sd_clear_sensor_file(SENSOR_BME280);
 	}
 
-    else if (strcmp(msg, "display live bme") == 0) {
-        display_live_bme = 1;
-        shell_printf("BME280 live OLED display enabled.\r\n");
-    }
-
     else if (strcmp(msg, "pause live bme") == 0) {
-        display_live_bme = 0;
+        pause_live_bme = 1;
         shell_printf("BME280 live OLED display paused.\r\n");
     }
 
-    else if (strcmp(msg, "display live mpu") == 0) {
-        display_live_mpu = 1;
-        shell_printf("MPU6050 live OLED display enabled.\r\n");
+    else if (strcmp(msg, "resume live bme") == 0) {
+    	pause_live_bme = 0;
+        shell_printf("BME280 live OLED display resumed.\r\n");
     }
 
     else if (strcmp(msg, "pause live mpu") == 0) {
-        display_live_mpu = 0;
+    	pause_live_mpu = 1;
         shell_printf("MPU6050 live OLED display paused.\r\n");
+    }
+
+    else if (strcmp(msg, "resume live mpu") == 0) {
+    	pause_live_mpu = 0;
+        shell_printf("MPU6050 live OLED display resumed.\r\n");
     }
 
     else if (strcmp(msg, "abort read") == 0) {

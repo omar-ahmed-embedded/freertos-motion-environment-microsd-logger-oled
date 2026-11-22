@@ -43,7 +43,8 @@
 #include "freertos-app.h"
 #include "main.h"
 #include "shell.h"
-#include  "sd.h"
+#include "sd.h"
+#include "oled.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -282,13 +283,29 @@ void decode_display_live_bme(void){
         bme280_sensor_sd_log.length = bme_log_indx;
 
         if (xQueueSend(sd_log_queue_handle, &bme280_sensor_sd_log,
-                       pdMS_TO_TICKS(250)) != pdPASS) {
-            shell_printf("SD queue full; BME batch retained, new reading skipped.\r\n");
-            return;
+                       pdMS_TO_TICKS(250)) == pdPASS) {
+        	bme_log_indx = 0;
+			shell_printf("BME280 log data ready.\r\n");
+
+			if (!pause_live_bme) {
+				oled_sensor_msg_t oled_message = {
+					.sensor_type = SENSOR_BME280,
+
+					.temperature_c = (float)bme280_reading.temperature,
+					.pressure_pa = (float)bme280_reading.pressure,
+					.humidity_rh = (float)bme280_reading.humidity
+				};
+
+				/* Skip this display update if the OLED queue is full. */
+				xQueueSend(oled_queue_handle, &oled_message, 0);
+			}
+        }
+        else {
+        	 shell_printf("SD queue full; BME batch retained, new reading skipped.\r\n");
+        	 return;
         }
 
-        bme_log_indx = 0;
-        shell_printf("BME280 log data ready.\r\n");
+
     }
 
     /* Append the formatted characters, excluding the terminating '\0'. */

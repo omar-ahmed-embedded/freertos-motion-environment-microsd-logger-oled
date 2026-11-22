@@ -22,10 +22,12 @@ extern TaskHandle_t mpu6050_sample_task_handle;
 extern TaskHandle_t bme280_sample_task_handle;
 extern TaskHandle_t sd_sensor_log_task_handle;
 extern TaskHandle_t sd_file_read_task_handle;
+extern TaskHandle_t oled_display_task_handle;
 
 extern QueueHandle_t shell_print_queue_handle;
 extern QueueHandle_t sd_log_queue_handle;
 extern QueueHandle_t sd_read_queue_handle;
+extern QueueHandle_t oled_queue_handle;
 
 extern SemaphoreHandle_t i2c_mutex_handle;
 extern SemaphoreHandle_t sd_mutex_handle;

@@ -18,17 +18,15 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "main.h"
 #include "freertos-app.h"
 #include "mpu6050.h"
 #include "sd.h"
 #include "main.h"
 #include "shell.h"
+#include "oled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,10 +52,12 @@ TaskHandle_t mpu6050_sample_task_handle;
 TaskHandle_t bme280_sample_task_handle;
 TaskHandle_t sd_sensor_log_task_handle;
 TaskHandle_t sd_file_read_task_handle;
+TaskHandle_t oled_display_task_handle;
 
 QueueHandle_t shell_print_queue_handle;
 QueueHandle_t sd_log_queue_handle;
 QueueHandle_t sd_read_queue_handle;
+QueueHandle_t oled_queue_handle;
 
 SemaphoreHandle_t i2c_mutex_handle;
 SemaphoreHandle_t sd_mutex_handle;
@@ -78,8 +78,9 @@ extern void bme280_sample_task(void *arg);
 void FreeRTOS_Init(void){
 
 	shell_print_queue_handle = xQueueCreate(4, sizeof(shell_print_msg_t));
-	sd_log_queue_handle = xQueueCreate(8, sizeof(sensor_sd_log_t));
+	sd_log_queue_handle = xQueueCreate(6, sizeof(sensor_sd_log_t));
 	sd_read_queue_handle =  xQueueCreate(2, sizeof(sensor_type_t));
+	oled_queue_handle = xQueueCreate(6, sizeof(oled_sensor_msg_t));
 
 
 	i2c_mutex_handle = xSemaphoreCreateMutex(); // Shared between the two sensors sampling
@@ -135,6 +136,14 @@ void FreeRTOS_Init(void){
 			NULL,
 			3,
 			&sd_file_read_task_handle);
+
+	xTaskCreate(
+			oled_display_task,
+			"oled_display_task",
+			512,
+			NULL,
+			1,
+			&oled_display_task_handle);
 
 
 }

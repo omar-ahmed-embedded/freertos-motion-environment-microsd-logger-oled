@@ -15,6 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "mpu6050.h"
 #include "freertos-app.h"
+#include "oled.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -26,8 +28,8 @@ uint8_t i2c_mpu6050_rx_buffer[MPU_I2C_RX_FRAME_SIZE];
 
 int i2c_sample_count = 0;
 uint8_t start_timer = 0;
-uint8_t display_live_mpu = 0;
 static uint16_t indx = 0;
+
 sensor_sd_log_t mpu_sensor_sd_log = {
 		    .sensor_type = SENSOR_MPU6050,
 			.length = 0
@@ -133,13 +135,35 @@ void decode_display_live_mpu(void){
 	if(indx + (uint16_t)len> sizeof(mpu_sensor_sd_log.buffer)){
 		mpu_sensor_sd_log.length = indx;	// How many bytes are to be logged
 
-		if (xQueueSend(sd_log_queue_handle,  &mpu_sensor_sd_log, // Queue a copy of the completed log buffer
-				pdMS_TO_TICKS(250)) == pdPASS){
-			indx = 0;    // Start a new batch overwriting the log buffer.
-			shell_printf("\r\nMPU6050 log data ready.\r\n");
-		}
-		else{
-			shell_printf("SD log queue full; buffer retained for retry.\r\n");
+		if (xQueueSend(sd_log_queue_handle, &mpu_sensor_sd_log,
+		               pdMS_TO_TICKS(250)) == pdPASS) {				// Queue a copy of the completed log buffer
+
+		    indx = 0;	// Start a new batch overwriting the log buffer.
+
+		    shell_printf("\r\nMPU6050 log data ready.\r\n");
+
+		    if (!pause_live_mpu) {
+		        oled_sensor_msg_t oled_message = {
+		            .sensor_type = SENSOR_MPU6050,
+
+		            .ax_g = ax_g,
+		            .ay_g = ay_g,
+		            .az_g = az_g,
+
+		            .gx_dps = gx_dps,
+		            .gy_dps = gy_dps,
+		            .gz_dps = gz_dps,
+
+		            .temperature_c = temp_c
+		        };
+
+		        /* Skip this display update if the OLED queue is full. */
+		        xQueueSend(oled_queue_handle, &oled_message, 0);
+		    }
+
+		} else {
+		    shell_printf("SD log queue full; buffer retained for retry.\r\n");
+		    return;
 		}
 	}
 

@@ -44,7 +44,9 @@ Core/Src/bme280.o: ../Core/Src/bme280.c ../Core/Inc/bme280.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/shell.h ../Core/Inc/sd.h
+ ../Core/Inc/shell.h ../Core/Inc/sd.h ../Core/Inc/oled.h \
+ ../Core/Inc/ssd1306.h ../Core/Inc/ssd1306_conf.h ../Core/Inc/main.h \
+ ../Core/Inc/ssd1306_fonts.h ../Core/Inc/ssd1306_tests.h ../Core/Inc/sd.h
 ../Core/Inc/bme280.h:
 ../Core/Inc/bme280_defs.h:
 ../Core/Inc/freertos-app.h:
@@ -94,4 +96,11 @@ Core/Src/bme280.o: ../Core/Src/bme280.c ../Core/Inc/bme280.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/shell.h:
+../Core/Inc/sd.h:
+../Core/Inc/oled.h:
+../Core/Inc/ssd1306.h:
+../Core/Inc/ssd1306_conf.h:
+../Core/Inc/main.h:
+../Core/Inc/ssd1306_fonts.h:
+../Core/Inc/ssd1306_tests.h:
 ../Core/Inc/sd.h:
