@@ -582,7 +582,7 @@ void sd_file_read_task(void *arg){
 			 continue;
 		 }
 
-		 /*Sensor task wakes and releases I2C mutex */
+		 /*Sensor task wakes and releases I2C mutex. Prevents the read from starting during a sample. */
 		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 		 xSemaphoreGive(i2c_mutex_handle);
 
@@ -632,15 +632,22 @@ void sd_file_read_task(void *arg){
 
 
 			if (tx_result == HAL_OK){
-				if (ulTaskNotifyTake(pdTRUE, 2000) == 0){  // Wait until ISR gives notification
+				if (ulTaskNotifyTake(pdTRUE, 3000) == 0){  // Wait until ISR gives notification
 					HAL_StatusTypeDef abort_result = HAL_UART_AbortTransmit(&huart2);
 					tx_result = HAL_TIMEOUT;
-
 
 				}
 			}
 
+			/* Release before either branch can leave the loop. */
 			xSemaphoreGive(shell_print_mutex_handle);
+
+			if (abort_file_read){
+				shell_printf("\r\n\r\nFile read aborted.\r\n");
+				break;
+			}
+
+
 			if (tx_result != HAL_OK) {
 				shell_printf("UART TX failed: %d\r\n", (int)tx_result);
 			    break;
@@ -660,9 +667,11 @@ void sd_file_read_task(void *arg){
 			 shell_printf("File close failed: %d\r\n", (int)close_result);
 		 }
 
-		 if (result == FR_OK && close_result == FR_OK) {
-			 shell_printf("File read complete.\r\n");
+		 if (result == FR_OK && close_result == FR_OK &&
+		     tx_result == HAL_OK && !abort_file_read) {
+		     shell_printf("File read complete.\r\n");
 		 }
+		 abort_file_read = 0;
 
 	 }
 }

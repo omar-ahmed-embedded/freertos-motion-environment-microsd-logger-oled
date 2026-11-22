@@ -34,7 +34,10 @@ uint8_t rx_head = 0;
 uint8_t rx_tail = 0;
 char    rx_msg[MSG_LEN_MAX];
 uint8_t rx_msg_len = 0;
-
+uint8_t pause_sd_logging = 0;
+uint8_t abort_file_read = 0;
+uint8_t pause_mpu_sampling = 0;
+uint8_t pause_bme_sampling = 0;
 
 
 /* Code ---------------------------------------------------------*/
@@ -133,11 +136,15 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "help:", "Displays available commands");
         shell_printf("%-28s%s\r\n", "read mpu:", "Reads the MPU6050 file from SD");
         shell_printf("%-28s%s\r\n", "read bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "pause mpu:", "Reads the MPU6050 file from SD");
+        shell_printf("%-28s%s\r\n", "pause bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "resume mpu:", "Reads the MPU6050 file from SD");
+        shell_printf("%-28s%s\r\n", "resume bme:", "Reads the BME280 file from SD");
         shell_printf("%-28s%s\r\n", "display live bme:", "Displays live BME280 readings on the OLED");
         shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 display");
         shell_printf("%-28s%s\r\n", "display live mpu:", "Displays live MPU6050 readings on the OLED");
         shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 display");
-
+        shell_printf("%-28s%s\r\n", "abort read:", "Aborts file read from SD");
         shell_printf("\r\n");
     }
 
@@ -157,6 +164,29 @@ void shell_execute(char *msg)
         }
     }
 
+	else if (strcmp(msg, "pause mpu") == 0) {
+		pause_mpu_sampling = 1;
+		shell_printf("\r\nMPU6050 sampling paused.\r\n");
+	}
+
+	else if (strcmp(msg, "resume mpu") == 0) {
+		pause_mpu_sampling = 0;
+		xTaskNotifyGive(mpu6050_sample_task_handle);
+		shell_printf("\r\nMPU6050 sampling resumed.\r\n");
+	}
+
+	else if (strcmp(msg, "pause bme") == 0) {
+		pause_bme_sampling = 1;
+		shell_printf("\r\nBME280 sampling paused.\r\n");
+	}
+
+	else if (strcmp(msg, "resume bme") == 0) {
+		pause_bme_sampling = 0;
+		xTaskNotifyGive(bme280_sample_task_handle);
+		shell_printf("BME280 sampling resumed.\r\n");
+	}
+
+
     else if (strcmp(msg, "display live bme") == 0) {
         display_live_bme = 1;
         shell_printf("BME280 live OLED display enabled.\r\n");
@@ -175,6 +205,11 @@ void shell_execute(char *msg)
     else if (strcmp(msg, "pause live mpu") == 0) {
         display_live_mpu = 0;
         shell_printf("MPU6050 live OLED display paused.\r\n");
+    }
+
+    else if (strcmp(msg, "abort read") == 0) {
+    	abort_file_read = 1;
+
     }
 
     else {

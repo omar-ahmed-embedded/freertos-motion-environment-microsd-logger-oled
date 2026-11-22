@@ -35,6 +35,7 @@ extern uint32_t sd_rx_block;
 extern uint8_t  sd_read_buffer[SD_BLOCK_SIZE];
 extern uint8_t display_live_bme;
 extern uint8_t display_live_mpu;
+extern uint8_t abort_file_read;
 
 typedef enum {
 	SD_OK = 0,

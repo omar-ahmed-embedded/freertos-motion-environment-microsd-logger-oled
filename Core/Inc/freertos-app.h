@@ -19,6 +19,7 @@
 extern TaskHandle_t shell_read_task_handle;
 extern TaskHandle_t shell_print_task_handle;
 extern TaskHandle_t mpu6050_sample_task_handle;
+extern TaskHandle_t bme280_sample_task_handle;
 extern TaskHandle_t sd_sensor_log_task_handle;
 extern TaskHandle_t sd_file_read_task_handle;
 

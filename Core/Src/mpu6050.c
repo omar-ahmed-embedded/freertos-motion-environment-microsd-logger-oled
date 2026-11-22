@@ -128,6 +128,9 @@ void mpu6050_sample_task(void *arg){
 	uint16_t indx = 0;
 	for(;;){
 
+		while (pause_mpu_sampling) {
+		    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+		}
 		xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 				// Shared with sd read and write to prevent sd operation from
 																	//interrupting a running i2c operation
@@ -169,7 +172,10 @@ void mpu6050_sample_task(void *arg){
 			    shell_printf("SD log queue full; buffer retained for retry.\r\n");
 			}
 		}
-
+		if (pause_mpu_sampling){
+			shell_printf("MPU6050 sampling paused.\r\n");
+			vTaskSuspend(NULL);
+		}
 		/* Sample each 250 ms*/
 		vTaskDelay(pdMS_TO_TICKS(250));
 	}

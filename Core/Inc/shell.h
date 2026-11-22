@@ -31,6 +31,8 @@ extern uint8_t uart_rx_buffer[UART_RX_BUFFER_SIZE];
 extern char uart_tx_buffer[UART_TX_BUFFER_SIZE];
 
 extern uint8_t pause_sd_logging;
+extern uint8_t pause_mpu_sampling;
+extern uint8_t pause_bme_sampling;
 
 /* Functions ---------------------------------------------------------*/
 void shell_printf(const char *msg, ...);		// ... is ellipsis. variadic function --> accepts any number of additional arguments

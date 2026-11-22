@@ -203,6 +203,11 @@ void bme280_sample_task(void *arg){
 
 	 for (;;) {
 
+		 while (pause_bme_sampling) {
+		     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+		     last_wake = xTaskGetTickCount();
+		 }
+
 		 xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
 
 		 result = bme280_set_sensor_mode( BME280_POWERMODE_FORCED, &sensor);
@@ -267,7 +272,11 @@ void bme280_sample_task(void *arg){
         }
 
 		/* Sample every 250ms */
+		if (pause_bme_sampling){
+			shell_printf("BME280 sampling paused.\r\n");
+			vTaskSuspend(NULL);
 
+		}
 		 vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(250));
 	}
 
