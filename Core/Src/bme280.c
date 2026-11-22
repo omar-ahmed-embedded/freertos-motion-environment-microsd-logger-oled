@@ -44,6 +44,8 @@
 #include "main.h"
 #include "shell.h"
 #include  "sd.h"
+
+#include <stdio.h>
 #include <string.h>
 /**\name Internal macros */
 /* To identify osr settings selected by user */
@@ -55,6 +57,15 @@
 /* Variables---------------------------------------------------------*/
 uint8_t* i2c_bme280_rx_buffer;
 extern I2C_HandleTypeDef hi2c1;
+
+static struct bme280_data bme280_reading = {0};  // 3 members * 8 bytes
+static uint16_t bme_log_indx = 0;
+
+static sensor_sd_log_t bme280_sensor_sd_log = {
+    .sensor_type = SENSOR_BME280,
+    .length = 0
+};
+
 
 // USER CODE BEGIN
 /**
@@ -139,15 +150,10 @@ void bme280_sample_task(void *arg){
 
 	struct bme280_dev sensor = {0}; 	//Holds the communication callbacks, interface information, and calibration data.
 	struct bme280_settings settings = {0};
-	struct bme280_data bme280_reading = {0}; // 3 members * 8 bytes
 
 	uint32_t conversion_delay_us;
 	int8_t result;			// BME280_OK on success
-	uint16_t indx = 0;
 
-	sensor_sd_log_t bme280_sensor_sd_log = {
-	    .sensor_type = SENSOR_BME280
-	};
 
 	/* Tell Bosch’s driver that we are using I2C. */
 	sensor.intf = BME280_I2C_INTF;
@@ -222,68 +228,78 @@ void bme280_sample_task(void *arg){
 			 		// Wait until I2C sample is done
 			 xSemaphoreGive(i2c_mutex_handle);
 
-			 /* Fille log buffer and queue for sd log*/
 			 if (result == BME280_OK) {
-				 if(indx <= BME280_LOG_DATA_SIZE-BME280_I2C_RX_FRAME_SIZE){ 		// Store readings in log buffer
-					memcpy(&bme280_sensor_sd_log.buffer[indx],
-							&bme280_reading.pressure,
-							sizeof(bme280_reading.pressure));
-
-					indx += sizeof(bme280_reading.pressure);
-
-					memcpy(&bme280_sensor_sd_log.buffer[indx],
-							&bme280_reading.temperature,
-							sizeof(bme280_reading.temperature));
-
-					indx += sizeof(bme280_reading.temperature);
-
-					memcpy(&bme280_sensor_sd_log.buffer[indx],
-							&bme280_reading.humidity,
-							sizeof(bme280_reading.humidity));
-
-					indx += sizeof(bme280_reading.humidity);
-				 }
-				// Fill the remaining eight bytes with padding. */
-				if (indx == BME280_LOG_DATA_SIZE){		// At index 504
-				    memset(&bme280_sensor_sd_log.buffer[indx], 0xFF,
-				           SD_BLOCK_SIZE - indx);
-
-					shell_printf("\r\nBME280 log data ready.\r\n");
-
-					/* Queue a copy of the completed log buffer. */
-					if (xQueueSend(sd_log_queue_handle,  &bme280_sensor_sd_log,
-							pdMS_TO_TICKS(250)) == pdPASS){
-						indx = 0;
-					}
-					else{
-						shell_printf("SD log queue full; buffer retained.\r\n");
-					}
-				}
-
+			     decode_display_live_bme();
 			 }
 			 else {
-                shell_printf("BME read failed: %d\r\n", (int)result);
+			     shell_printf("BME read failed: %d\r\n", (int)result);
 			 }
-
 
         }
 		else {
 			shell_printf("BME trigger failed: %d\r\n", (int)result);
         }
 
-		/* Sample every 250ms */
 		if (pause_bme_sampling){
 			shell_printf("BME280 sampling paused.\r\n");
 			vTaskSuspend(NULL);
 
 		}
-		 vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(250));
+
+		/* Sample every 250ms */
+		vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(250));
 	}
 
 }
 // USER CODE END
 
+/**
+  * @brief Format and batch the latest BME280 reading for logging.
+  * @retval None
+  */
+void decode_display_live_bme(void){
+    static char text[160];
 
+    int len = snprintf(
+        text, sizeof(text),
+        "\r\ntemp     =%.2f °C\r\n"
+        "pressure = %.2f Pa\r\n"
+        "humidity =%.2f %%RH\r\n",
+        bme280_reading.temperature,
+        bme280_reading.pressure,
+        bme280_reading.humidity
+    );
+
+    if (len < 0 || (size_t)len >= sizeof(text)) {
+        shell_printf("BME text formatting failed.\r\n");
+        return;
+    }
+
+    /* Queue the existing batch if the next reading will not fit. */
+    if (bme_log_indx + (uint16_t)len >
+        sizeof(bme280_sensor_sd_log.buffer)) {
+
+        bme280_sensor_sd_log.length = bme_log_indx;
+
+        if (xQueueSend(sd_log_queue_handle, &bme280_sensor_sd_log,
+                       pdMS_TO_TICKS(250)) != pdPASS) {
+            shell_printf("SD queue full; BME batch retained, new reading skipped.\r\n");
+            return;
+        }
+
+        bme_log_indx = 0;
+        shell_printf("BME280 log data ready.\r\n");
+    }
+
+    /* Append the formatted characters, excluding the terminating '\0'. */
+    memcpy(&bme280_sensor_sd_log.buffer[bme_log_indx],
+           text, (size_t)len);
+
+    bme_log_indx += (uint16_t)len;
+
+    /* Live UART output. */
+    // shell_printf("%s", text);
+}
 
 /*!
  * @brief This internal API puts the device to sleep mode.
@@ -297,6 +313,9 @@ void bme280_sample_task(void *arg){
  * @retval < 0 -> Fail.
  *
  */
+
+
+
 static int8_t put_device_to_sleep(struct bme280_dev *dev);
 
 /*!

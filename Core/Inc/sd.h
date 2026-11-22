@@ -57,8 +57,9 @@ typedef enum {
 } sensor_type_t;
 
 typedef struct {
-    uint8_t buffer[SD_BLOCK_SIZE];
+    char buffer[SD_BLOCK_SIZE];
     sensor_type_t sensor_type;
+    uint16_t length;
 } sensor_sd_log_t;
 
 /* Functions ---------------------------------------------------------*/

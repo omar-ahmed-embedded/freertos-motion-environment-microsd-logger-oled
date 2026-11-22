@@ -1,5 +1,5 @@
-../Core/Src/mpu6050.c:34:14:mpu6050_init	8
-../Core/Src/mpu6050.c:83:6:convert_display_live_sensor	1
-../Core/Src/mpu6050.c:122:6:mpu6050_sample_task	9
-../Core/Src/mpu6050.c:191:6:HAL_I2C_MemRxCpltCallback	3
-../Core/Src/mpu6050.c:206:6:HAL_I2C_ErrorCallback	3
+../Core/Src/mpu6050.c:40:14:mpu6050_init	8
+../Core/Src/mpu6050.c:89:6:decode_display_live_mpu	5
+../Core/Src/mpu6050.c:160:6:mpu6050_sample_task	7
+../Core/Src/mpu6050.c:224:6:HAL_I2C_MemRxCpltCallback	3
+../Core/Src/mpu6050.c:239:6:HAL_I2C_ErrorCallback	3

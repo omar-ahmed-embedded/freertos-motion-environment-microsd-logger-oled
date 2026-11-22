@@ -117,10 +117,12 @@ int main(void)
   MX_USART2_UART_Init();
   MX_FATFS_Init();
   MX_SPI2_Init();
+
   ssd1306_Init();
   ssd1306_TestDrawBitmap();
   /* USER CODE BEGIN 2 */
   FreeRTOS_Init();
+
   /* USER CODE END 2 */
 
   /* Init scheduler */

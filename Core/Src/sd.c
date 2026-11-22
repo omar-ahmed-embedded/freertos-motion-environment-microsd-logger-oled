@@ -486,9 +486,9 @@ void sd_sensor_log_task(void *arg){
 			/* Move to the end so new readings are appended. */
 			f_lseek(&mpu_file, f_size(&mpu_file));
 
-			result = f_write(&mpu_file,log.buffer, SD_BLOCK_SIZE, &bytes_written);
+			result = f_write(&mpu_file, log.buffer, log.length, &bytes_written);
 
-			if (result != FR_OK || bytes_written != SD_BLOCK_SIZE) {
+			if (result != FR_OK || bytes_written != log.length) {
 			    shell_printf("MPU write failed: result=%d, bytes=%u\r\n",
 			                 (int)result, (unsigned int)bytes_written);
 
@@ -643,7 +643,7 @@ void sd_file_read_task(void *arg){
 			xSemaphoreGive(shell_print_mutex_handle);
 
 			if (abort_file_read){
-				shell_printf("\r\n\r\nFile read aborted.\r\n");
+				shell_printf("\r\nFile read aborted.\r\n");
 				break;
 			}
 
@@ -660,16 +660,16 @@ void sd_file_read_task(void *arg){
 		 xSemaphoreGive(sd_mutex_handle);
 
 		 if (result != FR_OK) {
-			 shell_printf("File read failed: %d\r\n", (int)result);
+			 shell_printf("\r\nFile read failed: %d\r\n", (int)result);
 		 }
 
 		 if (close_result != FR_OK) {
-			 shell_printf("File close failed: %d\r\n", (int)close_result);
+			 shell_printf("\r\nFile close failed: %d\r\n", (int)close_result);
 		 }
 
 		 if (result == FR_OK && close_result == FR_OK &&
 		     tx_result == HAL_OK && !abort_file_read) {
-		     shell_printf("File read complete.\r\n");
+		     shell_printf("\r\nFile read complete.\r\n");
 		 }
 		 abort_file_read = 0;
 

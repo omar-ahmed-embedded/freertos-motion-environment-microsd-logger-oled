@@ -6,7 +6,6 @@
 ../Core/Src/shell.c:233:5:parse_int	24	static
 ../Core/Src/shell.c:266:6:shell_printf	536	static
 ../Core/Src/shell.c:303:6:print_status	24	static
-../Core/Src/shell.c:328:6:decode_print_sd_rx_block	104	static
-../Core/Src/shell.c:386:6:shell_read_task	16	static
-../Core/Src/shell.c:406:6:shell_print_task	536	static
-../Core/Src/shell.c:428:6:HAL_UART_ErrorCallback	32	static
+../Core/Src/shell.c:328:6:shell_read_task	16	static
+../Core/Src/shell.c:348:6:shell_print_task	536	static
+../Core/Src/shell.c:370:6:HAL_UART_ErrorCallback	32	static

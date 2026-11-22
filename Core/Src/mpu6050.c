@@ -15,7 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "mpu6050.h"
 #include "freertos-app.h"
-
+#include <stdio.h>
+#include <string.h>
 
 /* Variables ---------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
@@ -26,6 +27,11 @@ uint8_t i2c_mpu6050_rx_buffer[MPU_I2C_RX_FRAME_SIZE];
 int i2c_sample_count = 0;
 uint8_t start_timer = 0;
 uint8_t display_live_mpu = 0;
+static uint16_t indx = 0;
+sensor_sd_log_t mpu_sensor_sd_log = {
+		    .sensor_type = SENSOR_MPU6050,
+			.length = 0
+		};
 
 /**
 * @brief mpu6050 initialization
@@ -80,8 +86,9 @@ mpu_status_t mpu6050_init(void){
 * @brief Print latest mpu6050readings
 * @retval None
 */
-void convert_display_live_sensor(void){
+void decode_display_live_mpu(void){
 
+	static char text[256];
 	// Combine raw values
 	int16_t accel_x = (int16_t)((i2c_mpu6050_rx_buffer[0]  << 8) | i2c_mpu6050_rx_buffer[1]);
 	int16_t accel_y = (int16_t)((i2c_mpu6050_rx_buffer[2]  << 8) | i2c_mpu6050_rx_buffer[3]);
@@ -91,6 +98,8 @@ void convert_display_live_sensor(void){
 	int16_t gyro_y  = (int16_t)((i2c_mpu6050_rx_buffer[10] << 8) | i2c_mpu6050_rx_buffer[11]);
 	int16_t gyro_z  = (int16_t)((i2c_mpu6050_rx_buffer[12] << 8) | i2c_mpu6050_rx_buffer[13]);
 
+
+	/* Log data after conversion*/
 	// Convert to units
 	// Accel
 	float ax_g = accel_x / 16384.0f;   // for AFS_SEL = 0, ±2g range
@@ -105,12 +114,41 @@ void convert_display_live_sensor(void){
 	// Temp
 	float temp_c = temp / 340.0f + 36.53f;
 
-	// Display live values
-	shell_printf("\r\n\r\naccel_x=%6.3f g   accel_y=%6.3f g   accel_z=%6.3f g\r\n",
-				ax_g, ay_g, az_g);
-	shell_printf("gyro_x =%7.2f dps  gyro_y =%7.2f dps  gyro_z =%7.2f dps\r\n",
-				gx_dps, gy_dps, gz_dps);
-	shell_printf("temp   =%5.1f C\r\n\r\n", temp_c);
+	int len = snprintf(
+	    text, sizeof(text),
+	    "\r\naccel_x=%6.3f g   accel_y=%6.3f g   accel_z=%6.3f g\r\n"
+	    "gyro_x =%7.2f dps  gyro_y =%7.2f dps  gyro_z =%7.2f dps\r\n"
+	    "temp   =%5.1f C\r\n",
+	    ax_g, ay_g, az_g,
+	    gx_dps, gy_dps, gz_dps,
+	    temp_c
+	);
+
+	if (len < 0 || (size_t)len >= sizeof(text)) {
+	    shell_printf("MPU text formatting failed.\r\n");
+	    return;
+	}
+
+	/* Queue log once buffer cant fit new samples. */
+	if(indx + (uint16_t)len> sizeof(mpu_sensor_sd_log.buffer)){
+		mpu_sensor_sd_log.length = indx;	// How many bytes are to be logged
+
+		if (xQueueSend(sd_log_queue_handle,  &mpu_sensor_sd_log, // Queue a copy of the completed log buffer
+				pdMS_TO_TICKS(250)) == pdPASS){
+			indx = 0;    // Start a new batch overwriting the log buffer.
+			shell_printf("\r\nMPU6050 log data ready.\r\n");
+		}
+		else{
+			shell_printf("SD log queue full; buffer retained for retry.\r\n");
+		}
+	}
+
+	/* Copy bytes of length len from text to log buffer. */
+	memcpy(&mpu_sensor_sd_log.buffer[indx], text, (size_t)len);		// Start
+	indx += (uint16_t)len;	// Update index
+
+	/* Display live values */
+	//shell_printf("%s", text);
 
 
 }
@@ -121,11 +159,20 @@ void convert_display_live_sensor(void){
 */
 void mpu6050_sample_task(void *arg){
 
-	sensor_sd_log_t mpu_sensor_sd_log = {
-		    .sensor_type = SENSOR_MPU6050
-		};
+	mpu_status_t init_result;
 
-	uint16_t indx = 0;
+	do {
+	    xSemaphoreTake(i2c_mutex_handle, portMAX_DELAY);
+	    init_result = mpu6050_init();
+	    xSemaphoreGive(i2c_mutex_handle);
+
+	    if (init_result != MPU_OK) {
+	        shell_printf("MPU init failed: %d\r\n", (int)init_result);
+	        vTaskDelay(pdMS_TO_TICKS(1000));
+	    }
+	} while (init_result != MPU_OK);
+
+
 	for(;;){
 
 		while (pause_mpu_sampling) {
@@ -145,33 +192,19 @@ void mpu6050_sample_task(void *arg){
 		}
 
 		xSemaphoreTake(i2c_rx_done_semaphore_handle, portMAX_DELAY);
+
+		/* Check the completed transfer’s error status before processing it. */
+		uint32_t error = HAL_I2C_GetError(&hi2c1);
 		xSemaphoreGive(i2c_mutex_handle);
 
-		//convert_display_live_sensor();
-
-		/* Save received frame bytes in buffer */
-		if(indx <= MPU_LOG_DATA_SIZE-MPU_I2C_RX_FRAME_SIZE){
-			for (uint8_t i = 0; i < MPU_I2C_RX_FRAME_SIZE; i++){
-				mpu_sensor_sd_log.buffer[indx++] = i2c_mpu6050_rx_buffer[i];			// Add 14 received to log buffer
-			}
+		if (error != HAL_I2C_ERROR_NONE) {
+		    shell_printf("MPU read failed: 0x%lX\r\n", (unsigned long)error);
+		    vTaskDelay(pdMS_TO_TICKS(250));
+		    continue;
 		}
-		if (indx == MPU_LOG_DATA_SIZE){		// At index 504
-			for (uint16_t i = MPU_LOG_DATA_SIZE; i < LOG_BUFFER_SIZE; i++){			// Full bytes 504..512 with 0xFF
-				mpu_sensor_sd_log.buffer[i] = 0xFF;
-			}
-			shell_printf("\r\nMPU6050 log data ready.\r\n");
 
+		decode_display_live_mpu();
 
-
-			/* Queue a copy of the completed log buffer.*/
-			if (xQueueSend(sd_log_queue_handle,  &mpu_sensor_sd_log,
-			        pdMS_TO_TICKS(250)) == pdPASS){
-			    indx = 0;
-			}
-			else{
-			    shell_printf("SD log queue full; buffer retained for retry.\r\n");
-			}
-		}
 		if (pause_mpu_sampling){
 			shell_printf("MPU6050 sampling paused.\r\n");
 			vTaskSuspend(NULL);
