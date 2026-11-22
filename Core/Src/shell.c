@@ -145,6 +145,8 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "display live mpu:", "Displays live MPU6050 readings on the OLED");
         shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 display");
         shell_printf("%-28s%s\r\n", "abort read:", "Aborts file read from SD");
+        shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
+        shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
         shell_printf("\r\n");
     }
 
@@ -186,6 +188,12 @@ void shell_execute(char *msg)
 		shell_printf("BME280 sampling resumed.\r\n");
 	}
 
+	else if (strcmp(msg, "clear mpu") == 0) {
+	    sd_clear_sensor_file(SENSOR_MPU6050);
+	}
+	else if (strcmp(msg, "clear bme") == 0) {
+	    sd_clear_sensor_file(SENSOR_BME280);
+	}
 
     else if (strcmp(msg, "display live bme") == 0) {
         display_live_bme = 1;

@@ -12,4 +12,5 @@
 ../Core/Src/sd.c:382:9:sd_read_file	96	static
 ../Core/Src/sd.c:448:6:sd_sensor_log_task	536	static
 ../Core/Src/sd.c:563:6:sd_file_read_task	32	static
-../Core/Src/sd.c:683:7:error_str	16	static
+../Core/Src/sd.c:683:6:sd_clear_sensor_file	24	static
+../Core/Src/sd.c:729:7:error_str	16	static

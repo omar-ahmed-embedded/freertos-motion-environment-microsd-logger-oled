@@ -633,7 +633,7 @@ void sd_file_read_task(void *arg){
 
 			if (tx_result == HAL_OK){
 				if (ulTaskNotifyTake(pdTRUE, 3000) == 0){  // Wait until ISR gives notification
-					HAL_StatusTypeDef abort_result = HAL_UART_AbortTransmit(&huart2);
+					HAL_UART_AbortTransmit(&huart2);
 					tx_result = HAL_TIMEOUT;
 
 				}
@@ -675,6 +675,52 @@ void sd_file_read_task(void *arg){
 
 	 }
 }
+
+/**
+  * @brief Clear the selected sensor log file.
+  * @retval None
+  */
+void sd_clear_sensor_file(sensor_type_t sensor_type)
+{
+    const TCHAR *filename;
+    static FIL file;
+
+    switch (sensor_type) {
+    case SENSOR_MPU6050:
+        filename = "0:/MPU6050.BIN";
+        break;
+
+    case SENSOR_BME280:
+        filename = "0:/BME280.BIN";
+        break;
+
+    default:
+        shell_printf("Unknown sensor type.\r\n");
+        return;
+    }
+
+    /* Avoid blocking the shell behind an active file read. */
+    if (xSemaphoreTake(sd_mutex_handle, 0) != pdTRUE) {
+        shell_printf("SD busy. Try again after the current operation.\r\n");
+        return;
+    }
+
+    FRESULT result = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
+
+    if (result == FR_OK) {
+        result = f_close(&file);
+    }
+
+    xSemaphoreGive(sd_mutex_handle);
+
+    if (result == FR_OK) {
+        shell_printf("Cleared %s.\r\n", filename);
+    }
+    else {
+        shell_printf("File clear failed: %d\r\n", (int)result);
+    }
+}
+
 /**
   * @brief Convert the sd_status error to a string
   * @retval error as a string
