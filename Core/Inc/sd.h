@@ -75,7 +75,7 @@ sd_status_t clear_sd();
 void sd_sensor_log_task(void *arg);
 void sd_file_read_task(void *arg);
 void sd_clear_sensor_file(sensor_type_t sensor_type);
-
+void sd_list_files(void);
 char *error_str(sd_status_t res);
 
 #endif

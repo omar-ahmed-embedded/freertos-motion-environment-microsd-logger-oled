@@ -149,6 +149,7 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "resume logging:", "Resumes file logging for both sensors");
         shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
         shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
+        shell_printf("%-28s%s\r\n", "list files:", "Lists SD files and their sizes");
         shell_printf("\r\n");
     }
 
@@ -233,6 +234,9 @@ void shell_execute(char *msg)
 
     }
 
+    else if (strcmp(msg, "list files") == 0) {
+        sd_list_files();
+    }
     else {
         shell_printf("Unknown command. Type 'help' for available commands.\r\n");
     }

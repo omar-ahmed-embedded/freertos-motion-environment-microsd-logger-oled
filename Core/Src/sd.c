@@ -722,6 +722,66 @@ void sd_clear_sensor_file(sensor_type_t sensor_type)
 }
 
 /**
+  * @brief List files in the SD card root directory.
+  * @retval None
+  */
+void sd_list_files(void)
+{
+    DIR directory;
+    FILINFO entry;
+    FRESULT result;
+    FRESULT close_result;
+
+    /* Keep the shell responsive if another SD operation is running. */
+    if (xSemaphoreTake(sd_mutex_handle, 0) != pdTRUE) {
+        shell_printf("SD busy. Try again later.\r\n");
+        return;
+    }
+
+    result = f_opendir(&directory, "0:/");
+
+    if (result != FR_OK) {
+        xSemaphoreGive(sd_mutex_handle);
+        shell_printf("Directory open failed: %d\r\n", (int)result);
+        return;
+    }
+
+    shell_printf("\r\nSD files:\r\n");
+
+    for (;;) {
+        result = f_readdir(&directory, &entry);
+
+        /* Empty name means the end of the directory. */
+        if (result != FR_OK || entry.fname[0] == '\0') {
+            break;
+        }
+
+        /* Skip directories. */
+        if (entry.fattrib & AM_DIR) {
+            continue;
+        }
+
+        shell_printf("%-16s %lu bytes\r\n",
+                     entry.fname,
+                     (unsigned long)entry.fsize);
+    }
+
+    close_result = f_closedir(&directory);
+
+    xSemaphoreGive(sd_mutex_handle);
+
+    if (result != FR_OK) {
+        shell_printf("Directory read failed: %d\r\n", (int)result);
+    }
+
+    if (close_result != FR_OK) {
+        shell_printf("Directory close failed: %d\r\n",
+                     (int)close_result);
+    }
+}
+
+
+/**
   * @brief Convert the sd_status error to a string
   * @retval error as a string
   */
