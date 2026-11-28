@@ -1,3 +1,3 @@
-../Core/Src/oled.c:23:13:oled_write_line	1
-../Core/Src/oled.c:33:13:oled_write_value	2
-../Core/Src/oled.c:58:6:oled_display_task	6
+../Core/Src/oled.c:27:13:oled_write_line	1
+../Core/Src/oled.c:37:13:oled_write_value	2
+../Core/Src/oled.c:62:6:oled_display_task	6

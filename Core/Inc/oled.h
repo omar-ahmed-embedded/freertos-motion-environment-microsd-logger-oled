@@ -1,8 +1,11 @@
 /**
   ******************************************************************************
-  * @file       oled.h
-  * @brief
-  * @author		Omar Ahmed
+  * @file      oled.h
+  * @brief     OLED messages and display task interface.
+  * @author    Omar Ahmed
+  ******************************************************************************
+  * @details   Defines the sensor display message and declares the display task
+  *            and its pause flags.
   ******************************************************************************
   */
 

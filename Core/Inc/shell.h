@@ -1,14 +1,11 @@
 /**
   ******************************************************************************
-  * @file       shell.h
-  * @brief      Public interface for the UART command shell.
-  * @author		Omar Ahmed
+  * @file      shell.h
+  * @brief     UART shell definitions and task interfaces.
+  * @author    Omar Ahmed
   ******************************************************************************
-  * @details 	Defines UART buffer and command length limits. Declares shared
-  *          	shell state and functions for command reception, parsing,
-  *          	formatted output, status display, and stored sensor data decoding.
-  *
-  *
+  * @details   Defines command buffers and queued print messages. Declares shell
+  *            tasks, command handling, formatted output, and shared control flags.
   ******************************************************************************
   */
 

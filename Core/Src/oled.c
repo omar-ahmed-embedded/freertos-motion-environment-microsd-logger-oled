@@ -1,8 +1,12 @@
 /**
   ******************************************************************************
-  * @file       oled.c
-  * @brief
-  * @author		Omar Ahmed
+  * @file      oled.c
+  * @brief     Live sensor display on the SPI OLED.
+  * @author    Omar Ahmed
+  ******************************************************************************
+  * @details   Receives sensor readings from a queue and displays BME280 values
+  *            on the left and MPU6050 values on the right. Supports independent
+  *            pause and resume controls for each display section.
   ******************************************************************************
   */
 

@@ -1,14 +1,11 @@
 /**
   ******************************************************************************
-  * @file       sd.h
-  * @brief      Public interface for the SPI microSD driver.
-  * @author		Omar Ahmed
+  * @file      sd.h
+  * @brief     SD driver and sensor file interfaces.
+  * @author    Omar Ahmed
   ******************************************************************************
-  * @details    Defines block size, logging start address, and SD status codes.
-  *          	Declares transfer buffers, operation flags, logging counters,
-  *          	and functions for initialization, reading, writing, and clearing.
-  *
-  *
+  * @details   Defines SD status codes, sensor identifiers, and log messages.
+  *            Declares sector operations, logging and reading tasks, and file helpers.
   ******************************************************************************
   */
 

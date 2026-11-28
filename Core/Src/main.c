@@ -119,30 +119,7 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   FreeRTOS_Init();
-
   /* USER CODE END 2 */
-
-  /* Init scheduler */
-
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
 
   /* USER CODE BEGIN RTOS_THREADS */
   TaskHandle_t default_task_handle = NULL;

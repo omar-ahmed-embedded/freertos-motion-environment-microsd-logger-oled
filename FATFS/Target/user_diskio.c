@@ -1,8 +1,11 @@
 /* USER CODE BEGIN Header */
 /**
  ******************************************************************************
-  * @file    user_diskio.c
-  * @brief   This file includes a diskio driver skeleton to be completed by the user.
+  * @file      user_diskio.c
+  * @brief     FatFs interface to the SPI SD driver.
+  * @author    Omar Ahmed (project integration)
+  * @details   Implements disk initialization, status, sector reads and writes,
+  *            and control requests using the project SD driver.
   ******************************************************************************
   * @attention
   *

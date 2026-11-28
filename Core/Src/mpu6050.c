@@ -1,14 +1,12 @@
 /**
   ******************************************************************************
   * @file      mpu6050.c
-  * @brief     MPU6050 initialization, sampling, and live data display.
-  * @author	   Omar Ahmed
+  * @brief     MPU6050 sampling and readable log formatting.
+  * @author    Omar Ahmed
   ******************************************************************************
-  * @details   Configures sensor settings, and receives
-  *            14-byte measurement frames through I2C DMA. Handles I2C callbacks
-  *            and converts raw readings to acceleration, angular velocity,
-  *            and temperature for terminal output.
-  *
+  * @details   Initializes the sensor and reads motion and temperature data using
+  *            I2C interrupts. Sends decoded readings to the OLED queue and batches
+  *            formatted text for SD logging. Supports sampling and logging control.
   ******************************************************************************
   */
 

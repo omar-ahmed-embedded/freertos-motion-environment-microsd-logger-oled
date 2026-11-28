@@ -2,14 +2,11 @@
   ******************************************************************************
   * @file      shell.c
   * @brief     UART command shell and formatted terminal output.
-  * @author		Omar Ahmed
+  * @author    Omar Ahmed
   ******************************************************************************
-  * @details   Receives commands through UART DMA and processes help, status,
-  *            block reading, logging control, live display, and clearing commands.
-  *            Decodes stored sensor frames into values with units and transmits
-  *            formatted messages using blocking UART transfers.
-  *
-  *
+  * @details   Receives commands through UART DMA and queues terminal messages.
+  *            Controls sensor sampling, OLED updates, and logging, and handles
+  *            commands to read, abort, list, and clear sensor files.
   ******************************************************************************
   */
 
@@ -38,7 +35,6 @@ uint8_t abort_file_read = 0;
 
 uint8_t pause_mpu_sampling = 0;
 uint8_t pause_bme_sampling = 0;
-
 
 /* Code ---------------------------------------------------------*/
 /**
@@ -118,10 +114,6 @@ void shell_poll(void){
 
 
 /**
-  * @brief  Chech content of received msg, act on it, and print a response.
-  * @retval none
-  */
-/**
   * @brief Execute supported shell commands.
   * @retval None
   */
@@ -134,6 +126,7 @@ void shell_execute(char *msg)
     if (strcmp(msg, "help") == 0) {
         shell_printf("\r\n");
         shell_printf("%-28s%s\r\n", "help:", "Displays available commands");
+        shell_printf("%-28s%s\r\n", "list files:", "Lists SD files and their sizes");
         shell_printf("%-28s%s\r\n", "read mpu:", "Reads the MPU6050 file from SD");
         shell_printf("%-28s%s\r\n", "read bme:", "Reads the BME280 file from SD");
         shell_printf("%-28s%s\r\n", "pause mpu:", "Reads the MPU6050 file from SD");
@@ -149,7 +142,6 @@ void shell_execute(char *msg)
         shell_printf("%-28s%s\r\n", "resume logging:", "Resumes file logging for both sensors");
         shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
         shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
-        shell_printf("%-28s%s\r\n", "list files:", "Lists SD files and their sizes");
         shell_printf("\r\n");
     }
 

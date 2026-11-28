@@ -36,6 +36,18 @@
 *
 */
 
+/**
+  ******************************************************************************
+  * @file      bme280.c
+  * @brief     BME280 driver with FreeRTOS project integration.
+  * @author    Omar Ahmed (project integration)
+  ******************************************************************************
+  * @details   Project additions provide I2C callbacks, periodic sampling, OLED
+  *            updates, and readable SD log batches. Bosch driver code and its
+  *            original copyright and license notice are retained.
+  ******************************************************************************
+  */
+
 /*! @file bme280.c
  * @brief Sensor driver for BME280 sensor
  */

@@ -27,9 +27,9 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  0001b3f0  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00027995  00000000  00000000  0001b420  2**0
+ 12 .debug_info   00027994  00000000  00000000  0001b420  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 00005a92  00000000  00000000  00042db5  2**0
+ 13 .debug_abbrev 00005a92  00000000  00000000  00042db4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  14 .debug_aranges 00002130  00000000  00000000  00048848  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -37,15 +37,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_macro  0001e26b  00000000  00000000  0004c348  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0002b7d0  00000000  00000000  0006a5b3  2**0
+ 17 .debug_line   0002b7ce  00000000  00000000  0006a5b3  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000a3b0c  00000000  00000000  00095d83  2**0
+ 18 .debug_str    000a3b0c  00000000  00000000  00095d81  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  0013988f  2**0
+ 19 .comment      00000043  00000000  00000000  0013988d  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00009c98  00000000  00000000  001398d4  2**2
+ 20 .debug_frame  00009c98  00000000  00000000  001398d0  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 0000007a  00000000  00000000  0014356c  2**0
+ 21 .debug_line_str 0000007a  00000000  00000000  00143568  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -5508,9 +5508,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   FreeRTOS_Init();
  8002c02:	f7ff ff1d 	bl	8002a40 <FreeRTOS_Init>
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
+  /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_THREADS */
   TaskHandle_t default_task_handle = NULL;
@@ -10017,82 +10015,82 @@ void shell_execute(char *msg)
  8004954:	49a2      	ldr	r1, [pc, #648]	@ (8004be0 <shell_execute+0x2bc>)
  8004956:	48a3      	ldr	r0, [pc, #652]	@ (8004be4 <shell_execute+0x2c0>)
  8004958:	f000 f9dc 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "read mpu:", "Reads the MPU6050 file from SD");
+        shell_printf("%-28s%s\r\n", "list files:", "Lists SD files and their sizes");
  800495c:	4aa2      	ldr	r2, [pc, #648]	@ (8004be8 <shell_execute+0x2c4>)
  800495e:	49a3      	ldr	r1, [pc, #652]	@ (8004bec <shell_execute+0x2c8>)
  8004960:	48a0      	ldr	r0, [pc, #640]	@ (8004be4 <shell_execute+0x2c0>)
  8004962:	f000 f9d7 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "read bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "read mpu:", "Reads the MPU6050 file from SD");
  8004966:	4aa2      	ldr	r2, [pc, #648]	@ (8004bf0 <shell_execute+0x2cc>)
  8004968:	49a2      	ldr	r1, [pc, #648]	@ (8004bf4 <shell_execute+0x2d0>)
  800496a:	489e      	ldr	r0, [pc, #632]	@ (8004be4 <shell_execute+0x2c0>)
  800496c:	f000 f9d2 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "pause mpu:", "Reads the MPU6050 file from SD");
- 8004970:	4a9d      	ldr	r2, [pc, #628]	@ (8004be8 <shell_execute+0x2c4>)
- 8004972:	49a1      	ldr	r1, [pc, #644]	@ (8004bf8 <shell_execute+0x2d4>)
+        shell_printf("%-28s%s\r\n", "read bme:", "Reads the BME280 file from SD");
+ 8004970:	4aa1      	ldr	r2, [pc, #644]	@ (8004bf8 <shell_execute+0x2d4>)
+ 8004972:	49a2      	ldr	r1, [pc, #648]	@ (8004bfc <shell_execute+0x2d8>)
  8004974:	489b      	ldr	r0, [pc, #620]	@ (8004be4 <shell_execute+0x2c0>)
  8004976:	f000 f9cd 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "pause bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "pause mpu:", "Reads the MPU6050 file from SD");
  800497a:	4a9d      	ldr	r2, [pc, #628]	@ (8004bf0 <shell_execute+0x2cc>)
- 800497c:	499f      	ldr	r1, [pc, #636]	@ (8004bfc <shell_execute+0x2d8>)
+ 800497c:	49a0      	ldr	r1, [pc, #640]	@ (8004c00 <shell_execute+0x2dc>)
  800497e:	4899      	ldr	r0, [pc, #612]	@ (8004be4 <shell_execute+0x2c0>)
  8004980:	f000 f9c8 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "resume mpu:", "Reads the MPU6050 file from SD");
- 8004984:	4a98      	ldr	r2, [pc, #608]	@ (8004be8 <shell_execute+0x2c4>)
- 8004986:	499e      	ldr	r1, [pc, #632]	@ (8004c00 <shell_execute+0x2dc>)
+        shell_printf("%-28s%s\r\n", "pause bme:", "Reads the BME280 file from SD");
+ 8004984:	4a9c      	ldr	r2, [pc, #624]	@ (8004bf8 <shell_execute+0x2d4>)
+ 8004986:	499f      	ldr	r1, [pc, #636]	@ (8004c04 <shell_execute+0x2e0>)
  8004988:	4896      	ldr	r0, [pc, #600]	@ (8004be4 <shell_execute+0x2c0>)
  800498a:	f000 f9c3 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "resume bme:", "Reads the BME280 file from SD");
+        shell_printf("%-28s%s\r\n", "resume mpu:", "Reads the MPU6050 file from SD");
  800498e:	4a98      	ldr	r2, [pc, #608]	@ (8004bf0 <shell_execute+0x2cc>)
- 8004990:	499c      	ldr	r1, [pc, #624]	@ (8004c04 <shell_execute+0x2e0>)
+ 8004990:	499d      	ldr	r1, [pc, #628]	@ (8004c08 <shell_execute+0x2e4>)
  8004992:	4894      	ldr	r0, [pc, #592]	@ (8004be4 <shell_execute+0x2c0>)
  8004994:	f000 f9be 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 readings on the OLED");
- 8004998:	4a9b      	ldr	r2, [pc, #620]	@ (8004c08 <shell_execute+0x2e4>)
+        shell_printf("%-28s%s\r\n", "resume bme:", "Reads the BME280 file from SD");
+ 8004998:	4a97      	ldr	r2, [pc, #604]	@ (8004bf8 <shell_execute+0x2d4>)
  800499a:	499c      	ldr	r1, [pc, #624]	@ (8004c0c <shell_execute+0x2e8>)
  800499c:	4891      	ldr	r0, [pc, #580]	@ (8004be4 <shell_execute+0x2c0>)
  800499e:	f000 f9b9 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "resume live bme:", "Resumes live BME280 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "pause live bme:", "Pauses live BME280 readings on the OLED");
  80049a2:	4a9b      	ldr	r2, [pc, #620]	@ (8004c10 <shell_execute+0x2ec>)
  80049a4:	499b      	ldr	r1, [pc, #620]	@ (8004c14 <shell_execute+0x2f0>)
  80049a6:	488f      	ldr	r0, [pc, #572]	@ (8004be4 <shell_execute+0x2c0>)
  80049a8:	f000 f9b4 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "resume live bme:", "Resumes live BME280 readings on the OLED");
  80049ac:	4a9a      	ldr	r2, [pc, #616]	@ (8004c18 <shell_execute+0x2f4>)
  80049ae:	499b      	ldr	r1, [pc, #620]	@ (8004c1c <shell_execute+0x2f8>)
  80049b0:	488c      	ldr	r0, [pc, #560]	@ (8004be4 <shell_execute+0x2c0>)
  80049b2:	f000 f9af 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "resume live mpu:", "Resumes live MPU6050 readings on the OLED");
+        shell_printf("%-28s%s\r\n", "pause live mpu:", "Pauses live MPU6050 readings on the OLED");
  80049b6:	4a9a      	ldr	r2, [pc, #616]	@ (8004c20 <shell_execute+0x2fc>)
  80049b8:	499a      	ldr	r1, [pc, #616]	@ (8004c24 <shell_execute+0x300>)
  80049ba:	488a      	ldr	r0, [pc, #552]	@ (8004be4 <shell_execute+0x2c0>)
  80049bc:	f000 f9aa 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "abort read:", "Aborts file read from SD");
+        shell_printf("%-28s%s\r\n", "resume live mpu:", "Resumes live MPU6050 readings on the OLED");
  80049c0:	4a99      	ldr	r2, [pc, #612]	@ (8004c28 <shell_execute+0x304>)
  80049c2:	499a      	ldr	r1, [pc, #616]	@ (8004c2c <shell_execute+0x308>)
  80049c4:	4887      	ldr	r0, [pc, #540]	@ (8004be4 <shell_execute+0x2c0>)
  80049c6:	f000 f9a5 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "pause logging:", "Pauses file logging for both sensors");
+        shell_printf("%-28s%s\r\n", "abort read:", "Aborts file read from SD");
  80049ca:	4a99      	ldr	r2, [pc, #612]	@ (8004c30 <shell_execute+0x30c>)
  80049cc:	4999      	ldr	r1, [pc, #612]	@ (8004c34 <shell_execute+0x310>)
  80049ce:	4885      	ldr	r0, [pc, #532]	@ (8004be4 <shell_execute+0x2c0>)
  80049d0:	f000 f9a0 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "resume logging:", "Resumes file logging for both sensors");
+        shell_printf("%-28s%s\r\n", "pause logging:", "Pauses file logging for both sensors");
  80049d4:	4a98      	ldr	r2, [pc, #608]	@ (8004c38 <shell_execute+0x314>)
  80049d6:	4999      	ldr	r1, [pc, #612]	@ (8004c3c <shell_execute+0x318>)
  80049d8:	4882      	ldr	r0, [pc, #520]	@ (8004be4 <shell_execute+0x2c0>)
  80049da:	f000 f99b 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
+        shell_printf("%-28s%s\r\n", "resume logging:", "Resumes file logging for both sensors");
  80049de:	4a98      	ldr	r2, [pc, #608]	@ (8004c40 <shell_execute+0x31c>)
  80049e0:	4998      	ldr	r1, [pc, #608]	@ (8004c44 <shell_execute+0x320>)
  80049e2:	4880      	ldr	r0, [pc, #512]	@ (8004be4 <shell_execute+0x2c0>)
  80049e4:	f000 f996 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
+        shell_printf("%-28s%s\r\n", "clear mpu:", "Clears the MPU6050 log file");
  80049e8:	4a97      	ldr	r2, [pc, #604]	@ (8004c48 <shell_execute+0x324>)
  80049ea:	4998      	ldr	r1, [pc, #608]	@ (8004c4c <shell_execute+0x328>)
  80049ec:	487d      	ldr	r0, [pc, #500]	@ (8004be4 <shell_execute+0x2c0>)
  80049ee:	f000 f991 	bl	8004d14 <shell_printf>
-        shell_printf("%-28s%s\r\n", "list files:", "Lists SD files and their sizes");
+        shell_printf("%-28s%s\r\n", "clear bme:", "Clears the BME280 log file");
  80049f2:	4a97      	ldr	r2, [pc, #604]	@ (8004c50 <shell_execute+0x32c>)
  80049f4:	4997      	ldr	r1, [pc, #604]	@ (8004c54 <shell_execute+0x330>)
  80049f6:	487b      	ldr	r0, [pc, #492]	@ (8004be4 <shell_execute+0x2c0>)
@@ -10392,28 +10390,28 @@ void shell_execute(char *msg)
  8004bf0:	080186a0 	.word	0x080186a0
  8004bf4:	080186c0 	.word	0x080186c0
  8004bf8:	080186cc 	.word	0x080186cc
- 8004bfc:	080186d8 	.word	0x080186d8
- 8004c00:	080186e4 	.word	0x080186e4
- 8004c04:	080186f0 	.word	0x080186f0
- 8004c08:	080186fc 	.word	0x080186fc
- 8004c0c:	08018724 	.word	0x08018724
- 8004c10:	08018734 	.word	0x08018734
- 8004c14:	08018760 	.word	0x08018760
- 8004c18:	08018774 	.word	0x08018774
- 8004c1c:	080187a0 	.word	0x080187a0
- 8004c20:	080187b0 	.word	0x080187b0
- 8004c24:	080187dc 	.word	0x080187dc
- 8004c28:	080187f0 	.word	0x080187f0
- 8004c2c:	0801880c 	.word	0x0801880c
- 8004c30:	08018818 	.word	0x08018818
- 8004c34:	08018840 	.word	0x08018840
- 8004c38:	08018850 	.word	0x08018850
- 8004c3c:	08018878 	.word	0x08018878
- 8004c40:	08018888 	.word	0x08018888
+ 8004bfc:	080186ec 	.word	0x080186ec
+ 8004c00:	080186f8 	.word	0x080186f8
+ 8004c04:	08018704 	.word	0x08018704
+ 8004c08:	08018710 	.word	0x08018710
+ 8004c0c:	0801871c 	.word	0x0801871c
+ 8004c10:	08018728 	.word	0x08018728
+ 8004c14:	08018750 	.word	0x08018750
+ 8004c18:	08018760 	.word	0x08018760
+ 8004c1c:	0801878c 	.word	0x0801878c
+ 8004c20:	080187a0 	.word	0x080187a0
+ 8004c24:	080187cc 	.word	0x080187cc
+ 8004c28:	080187dc 	.word	0x080187dc
+ 8004c2c:	08018808 	.word	0x08018808
+ 8004c30:	0801881c 	.word	0x0801881c
+ 8004c34:	08018838 	.word	0x08018838
+ 8004c38:	08018844 	.word	0x08018844
+ 8004c3c:	0801886c 	.word	0x0801886c
+ 8004c40:	0801887c 	.word	0x0801887c
  8004c44:	080188a4 	.word	0x080188a4
- 8004c48:	080188b0 	.word	0x080188b0
- 8004c4c:	080188cc 	.word	0x080188cc
- 8004c50:	080188d8 	.word	0x080188d8
+ 8004c48:	080188b4 	.word	0x080188b4
+ 8004c4c:	080188d0 	.word	0x080188d0
+ 8004c50:	080188dc 	.word	0x080188dc
  8004c54:	080188f8 	.word	0x080188f8
  8004c58:	08018904 	.word	0x08018904
  8004c5c:	08018910 	.word	0x08018910

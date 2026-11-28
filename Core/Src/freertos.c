@@ -1,8 +1,11 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
+  * @file      freertos.c
+  * @brief     FreeRTOS application setup.
+  * @author    Omar Ahmed (project integration)
+  * @details   Creates tasks, queues, mutexes, and the I2C completion semaphore
+  *            for sensor sampling, OLED updates, SD access, and the UART shell.
   ******************************************************************************
   * @attention
   *

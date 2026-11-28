@@ -1,13 +1,12 @@
 /**
   ******************************************************************************
-  * @file		mpu.h
-  * @brief		Public interface and register definitions for the MPU6050
-  * @author		Omar Ahmed
-  *******************************************************************************
-  * @details	Defines the sensor address, registers, frame size, logging buffer layout
-  * 			and initialization status code. Declares shared sensor buffers, flags, functions.
-  *
-  *******************************************************************************
+  * @file      mpu6050.h
+  * @brief     MPU6050 definitions and application interface.
+  * @author    Omar Ahmed
+  ******************************************************************************
+  * @details   Declares sensor registers, frame sizes, status codes, and functions
+  *            for initialization, sampling, and decoding.
+  ******************************************************************************
   */
 #ifndef MPU6050_H
 #define MPU6050_H

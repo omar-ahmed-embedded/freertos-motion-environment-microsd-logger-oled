@@ -36,6 +36,18 @@
 *
 */
 
+/**
+  ******************************************************************************
+  * @file      bme280.h
+  * @brief     BME280 driver and project task declarations.
+  * @author    Omar Ahmed (project integration)
+  ******************************************************************************
+  * @details   Provides the Bosch sensor API and declarations for the project
+  *            sampling task and reading formatter. The original Bosch license
+  *            and driver documentation are retained.
+  ******************************************************************************
+  */
+
 /*! @file bme280.h
  * @brief Sensor driver for BME280 sensor
  */

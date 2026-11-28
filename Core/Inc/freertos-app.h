@@ -1,8 +1,11 @@
 /**
   ******************************************************************************
-  * @file       bme280.h
-  * @brief      header file for bme280.c.
-  * @author		Omar Ahmed
+  * @file      freertos-app.h
+  * @brief     FreeRTOS application objects and initialization.
+  * @author    Omar Ahmed
+  ******************************************************************************
+  * @details   Declares task, queue, mutex, and semaphore handles shared by the
+  *            sensor, display, SD, and shell modules.
   ******************************************************************************
   */
 

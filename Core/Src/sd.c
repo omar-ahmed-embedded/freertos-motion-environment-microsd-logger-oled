@@ -1,15 +1,12 @@
 /**
   ******************************************************************************
-  * @file       sd.c
-  * @brief      mciroSD driver
-  * @author		Omar Ahmed
+  * @file      sd.c
+  * @brief     SPI microSD driver and FatFs file operations.
+  * @author    Omar Ahmed
   ******************************************************************************
-  * @details 	Initializes the card, handles byte or block addressing, and reads
-  *          	and writes 512-byte blocks. Separates read requests and write
-  *          	initiation from completion polling. Tracks logging progress and
-  *          	clears the current session's logs by overwriting them with zeros.
-  *
-  *
+  * @details   Handles card initialization and sector transfers. Logs sensor text
+  *            to separate files and provides file reading, listing, and clearing.
+  *            Uses UART DMA to transmit file contents with abort support.
   ******************************************************************************
   */
 
